@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Qualidade do monorepo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependências pelo lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar formatação
+        run: pnpm format:check
+
+      - name: Executar lint
+        run: pnpm lint
+
+      - name: Executar typecheck
+        run: pnpm typecheck
+
+      - name: Executar testes
+        run: pnpm test
+
+      - name: Gerar builds
+        run: pnpm build

@@ -1,0 +1,36 @@
+{
+  "name": "closeflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fundação técnica do monorepo CloseFlow",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @closeflow/web --filter @closeflow/api dev",
+    "dev:web": "pnpm --filter @closeflow/web dev",
+    "dev:api": "pnpm --filter @closeflow/api dev",
+    "lint": "pnpm --recursive --if-present lint",
+    "lint:fix": "pnpm --recursive --if-present lint:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "test": "pnpm --recursive --if-present test",
+    "build": "pnpm --recursive --if-present build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.63.0"
+  }
+}
