@@ -1,0 +1,2 @@
+-- Baseline intencionalmente vazia.
+-- A fundação de persistência não antecipa tabelas ou entidades de domínio.

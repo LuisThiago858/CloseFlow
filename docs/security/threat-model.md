@@ -42,6 +42,7 @@ Modelo inicial baseado em STRIDE para navegador, API, PostgreSQL, armazenamento 
 | TM-14 | Perda/ransomware e backup inválido                            | Alto       | Backups isolados/criptografados, retenção e restauração testada                             | Médio                               |
 | TM-15 | DoS por consultas, anexos ou login                            | Médio/alto | Limites, paginação, rate limit, timeout, quotas e monitoramento                             | Médio; limites comerciais pendentes |
 | TM-16 | E-mail de convite enviado à pessoa errada                     | Alto       | Exibir destino, expiração, revogação, aceite pelo e-mail esperado e auditoria               | Médio                               |
+| TM-17 | URL ou credencial do banco vaza em erro, health ou log        | Alto       | Configuração validada, mensagens genéricas, logging allowlist e testes de não vazamento     | Baixo após testes automatizados     |
 
 ## Cenários de abuso essenciais
 
@@ -73,6 +74,7 @@ Usuário alterna de A para B e vê resposta de A por query key genérica. Keys t
 - Testes de token expirado/reutilizado, revogação e rate limiting.
 - Arquivos com extensão/MIME divergente, tamanho excedido e estado não liberado.
 - Verificação de headers, CORS, CSRF, XSS e redaction de logs.
+- Indisponibilidade do PostgreSQL retorna `503` sem URL, credencial, SQL ou stack; liveness permanece independente.
 - Restore drill e exercício de incidente antes de dados reais.
 
 ## Riscos abertos que exigem decisão

@@ -76,6 +76,10 @@ Envelope baseline inspirado em Problem Details:
 
 ## Persistência e transações
 
+- `DatabaseModule` centraliza um único `PrismaService` por processo e o exporta apenas para módulos que declaram essa dependência.
+- O Prisma Client é gerado em `apps/api/src/generated/prisma`, não é versionado e deve ser regenerado antes de typecheck/build.
+- Configuração do Prisma usa `DATABASE_URL`; testes de integração e migrations de teste usam `DATABASE_URL_TEST` explicitamente.
+- Migrations são versionadas, aplicadas com `migrate deploy` em CI/produção e nunca reescritas depois de aplicadas. `migrate dev` é exclusivamente local.
 - Prisma fica restrito à infraestrutura e scripts de migração/seeding.
 - Toda operação tenant-owned inclui filtro de `organizationId` no mesmo predicado do identificador.
 - Evitar primeiro buscar por `id` e depois comparar tenant quando uma consulta composta resolve atomicamente.
@@ -83,6 +87,13 @@ Envelope baseline inspirado em Problem Details:
 - Casos de uso definem fronteira transacional; não esconder transações globais em helpers.
 - Atualizações concorrentes críticas usam versionamento otimista ou condição sobre estado/versão.
 - Migrações seguem expansão/contração quando houver produção; rollback destrutivo exige plano.
+
+## Saúde operacional
+
+- `/api/v1/health/live` verifica somente o processo da API.
+- `/api/v1/health/ready` e `/api/v1/health` consultam o PostgreSQL e retornam `503` quando ele está indisponível.
+- Falha de configuração impede startup. Falha transitória de conexão mantém liveness disponível e readiness indisponível.
+- Respostas e logs de falha nunca incluem URL, credenciais, SQL ou stack.
 
 ## Autenticação e autorização
 

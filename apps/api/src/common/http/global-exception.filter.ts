@@ -23,6 +23,7 @@ const statusTitles: Readonly<Record<number, string>> = {
   [HttpStatus.CONFLICT]: 'Conflito de estado',
   [HttpStatus.UNPROCESSABLE_ENTITY]: 'Dados inválidos',
   [HttpStatus.TOO_MANY_REQUESTS]: 'Muitas requisições',
+  [HttpStatus.SERVICE_UNAVAILABLE]: 'Serviço indisponível',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Erro interno',
 };
 
@@ -88,10 +89,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (!isHttpException) {
       this.logger.error(
         {
-          err:
+          exceptionType:
             exception instanceof Error
-              ? exception
-              : new Error('Valor desconhecido lançado como exceção.'),
+              ? exception.constructor.name
+              : 'UnknownThrownValue',
           correlationId,
           method: request.method,
           path: request.originalUrl,

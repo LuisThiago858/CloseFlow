@@ -1,0 +1,3 @@
+# Este arquivo é gerado e gerenciado pelo Prisma Migrate.
+# Deve permanecer versionado e não deve ser editado após migrations aplicadas.
+provider = "postgresql"

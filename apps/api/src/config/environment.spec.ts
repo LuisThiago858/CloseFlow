@@ -26,4 +26,13 @@ describe('validateEnvironment', () => {
       validateEnvironment({ DATABASE_URL: 'https://localhost/database' }),
     ).toThrow('DATABASE_URL deve usar o protocolo PostgreSQL');
   });
+
+  it('valida a URL opcional do banco de integração', () => {
+    expect(() =>
+      validateEnvironment({
+        DATABASE_URL: 'postgresql://local/closeflow',
+        DATABASE_URL_TEST: 'https://localhost/closeflow_test',
+      }),
+    ).toThrow('DATABASE_URL_TEST deve usar o protocolo PostgreSQL');
+  });
 });

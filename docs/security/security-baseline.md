@@ -52,6 +52,8 @@ Esta baseline é requisito mínimo do MVP e deve ser transformada em controles v
 ## Banco e infraestrutura
 
 - Usuário da aplicação com menor privilégio; migration role separado; app nunca usa superuser.
+- `DATABASE_URL` e `DATABASE_URL_TEST` pertencem a ambientes distintos no desenvolvimento; o banco de integração é descartável e nunca recebe dados reais.
+- Erros de conexão e health checks não registram URL, senha, SQL ou stack; apenas ação e resultado operacional seguros.
 - Banco não exposto publicamente; redes e firewall com allowlist mínima.
 - Migrations revisadas, backups antes de mudanças arriscadas e estratégia expand/contract.
 - RLS, se adotado, deve forçar policies inclusive para owner adequado e falhar sem tenant context.
