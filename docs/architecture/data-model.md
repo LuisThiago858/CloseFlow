@@ -1,13 +1,16 @@
 # Modelo de dados conceitual
 
-Este documento orienta o desenho; não é um schema Prisma definitivo. Nomes e cardinalidades devem ser validados com casos de uso e testes antes da migração inicial.
+Este documento orienta o desenho; não é um schema Prisma definitivo. A migration de fundação é intencionalmente vazia. Nomes e cardinalidades devem ser validados com casos de uso e testes antes de cada migration de domínio.
 
 ## Convenções
 
-- IDs opacos (`UUID` ou `ULID`, decisão pendente) e nunca sequenciais expostos como mecanismo de segurança.
+- IDs opacos em UUID e nunca expostos como mecanismo de segurança.
+- Tabelas e colunas usam `snake_case`; models e campos TypeScript usam `PascalCase` e `camelCase` com mappings explícitos.
 - Tabelas tenant-owned contêm `organization_id` e índices iniciados por ele quando compatível com a consulta.
-- `created_at` e `updated_at` em UTC; `created_by`/`updated_by` quando houver valor de auditoria.
+- Instantes, incluindo `created_at` e `updated_at`, usam `timestamptz` em UTC; `created_by`/`updated_by` existem quando houver valor de auditoria.
+- Dinheiro usa `Decimal`, com precisão e escala definidas pelo contexto antes da migration.
 - `archived_at`/`deleted_at` apenas onde a política exigir; não aplicar soft delete universal.
+- Não usar `BaseEntity` ou repositório genérico; escritas dependentes têm fronteira transacional explícita.
 - Estados persistidos como enums estáveis ou texto com constraint; alterações requerem migração deliberada.
 - Documento fiscal, se coletado, precisa normalização, criptografia/mascaramento conforme risco e minimização.
 

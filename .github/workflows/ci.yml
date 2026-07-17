@@ -19,6 +19,28 @@ jobs:
     name: Qualidade do monorepo
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      API_PORT: 3000
+      WEB_ORIGIN: http://localhost:5173
+      LOG_LEVEL: silent
+      DATABASE_URL: postgresql://closeflow_ci:closeflow_ci_only@localhost:5432/closeflow_ci?schema=public
+      DATABASE_URL_TEST: postgresql://closeflow_ci:closeflow_ci_only@localhost:5432/closeflow_ci?schema=public
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: closeflow_ci
+          POSTGRES_USER: closeflow_ci
+          POSTGRES_PASSWORD: closeflow_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U closeflow_ci -d closeflow_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Obter código
@@ -38,6 +60,18 @@ jobs:
       - name: Instalar dependências pelo lockfile
         run: pnpm install --frozen-lockfile
 
+      - name: Gerar Prisma Client
+        run: pnpm prisma:generate
+
+      - name: Validar schema Prisma
+        run: pnpm prisma:validate
+
+      - name: Aplicar migrations versionadas
+        run: pnpm db:migrate:deploy
+
+      - name: Verificar estado das migrations
+        run: pnpm db:migrate:status
+
       - name: Verificar formatação
         run: pnpm format:check
 
@@ -47,8 +81,11 @@ jobs:
       - name: Executar typecheck
         run: pnpm typecheck
 
-      - name: Executar testes
+      - name: Executar testes unitários
         run: pnpm test
+
+      - name: Executar testes de integração
+        run: pnpm test:integration
 
       - name: Gerar builds
         run: pnpm build

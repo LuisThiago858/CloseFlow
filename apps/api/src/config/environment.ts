@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+const postgresqlUrl = (variableName: string) =>
+  z
+    .url(`${variableName} deve ser uma URL válida.`)
+    .refine(
+      (value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol),
+      `${variableName} deve usar o protocolo PostgreSQL.`,
+    );
+
 const environmentSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -9,12 +17,8 @@ const environmentSchema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
-  DATABASE_URL: z
-    .url('DATABASE_URL deve ser uma URL válida.')
-    .refine(
-      (value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol),
-      'DATABASE_URL deve usar o protocolo PostgreSQL.',
-    ),
+  DATABASE_URL: postgresqlUrl('DATABASE_URL'),
+  DATABASE_URL_TEST: postgresqlUrl('DATABASE_URL_TEST').optional(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

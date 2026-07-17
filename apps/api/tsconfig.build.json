@@ -4,8 +4,12 @@
     "node_modules",
     "dist",
     "test",
+    "scripts",
+    "prisma",
+    "prisma.config.ts",
     "**/*.spec.ts",
     "**/*.test.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vitest.integration.config.ts"
   ]
 }

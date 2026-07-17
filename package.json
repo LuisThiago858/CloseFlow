@@ -20,7 +20,19 @@
     "typecheck": "pnpm --recursive --if-present typecheck",
     "test": "pnpm --recursive --if-present test",
     "build": "pnpm --recursive --if-present build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "prisma:generate": "pnpm --filter @closeflow/api prisma:generate",
+    "prisma:validate": "pnpm --filter @closeflow/api prisma:validate",
+    "db:migrate:dev": "pnpm --filter @closeflow/api db:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @closeflow/api db:migrate:deploy",
+    "db:migrate:status": "pnpm --filter @closeflow/api db:migrate:status",
+    "db:migrate:test": "pnpm --filter @closeflow/api db:migrate:test",
+    "db:seed": "pnpm --filter @closeflow/api db:seed",
+    "db:studio": "pnpm --filter @closeflow/api db:studio",
+    "db:reset:local:dangerous": "pnpm --filter @closeflow/api db:reset:local:dangerous",
+    "db:test:up": "docker compose --profile test up -d postgres-test",
+    "db:test:down": "docker compose --profile test rm --stop --force postgres-test",
+    "test:integration": "pnpm --filter @closeflow/api test:integration",
+    "check": "pnpm format:check && pnpm lint && pnpm prisma:validate && pnpm prisma:generate && pnpm typecheck && pnpm test && pnpm db:migrate:test && pnpm test:integration && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

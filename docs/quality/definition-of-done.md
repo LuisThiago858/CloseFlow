@@ -31,6 +31,8 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 ## Dados
 
 - Migration é revisável, determinística e testada do zero.
+- Prisma Client e schema são gerados/validados; `migrate deploy` e `migrate status` passam no banco descartável.
+- Testes de integração usam `DATABASE_URL_TEST`, confirmam migrations aplicadas e não deixam tabelas demonstrativas indevidas.
 - Constraints e índices sustentam invariantes e consultas conhecidas.
 - Mudança destrutiva tem estratégia de compatibilidade, backup/rollback ou expand/contract.
 - Retenção, exclusão e compatibilidade histórica foram consideradas.

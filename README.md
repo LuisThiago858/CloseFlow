@@ -4,15 +4,16 @@ CloseFlow é uma plataforma SaaS B2B de controle operacional e governança do fe
 
 ## Estado do projeto
 
-O repositório contém somente a fundação técnica inicial:
+O repositório contém a fundação técnica e de persistência, ainda sem funcionalidades de negócio:
 
 - monorepo com pnpm workspaces;
 - frontend React/Vite com Router, TanStack Query, Tailwind e testes;
-- API NestJS com health check, ambiente validado, logs estruturados, Problem Details e OpenAPI;
-- PostgreSQL local por Docker Compose;
-- lint, formatação, typecheck, testes, build e CI.
+- API NestJS com liveness/readiness, ambiente validado, logs estruturados, Problem Details e OpenAPI;
+- Prisma 7 com adapter PostgreSQL, módulo central de banco e migration baseline vazia;
+- PostgreSQL persistente para desenvolvimento e instância efêmera isolada para integração;
+- lint, formatação, typecheck, testes unitários/integração, build e CI com PostgreSQL real.
 
-Autenticação, organizações, modelos de negócio, Prisma, Redis, filas, uploads e integrações ainda não foram implementados.
+Autenticação, organizações, models/tabelas de negócio, Redis, filas, uploads e integrações ainda não foram implementados.
 
 ## Requisitos locais
 
@@ -63,6 +64,16 @@ docker compose version
 
    Aguarde o serviço aparecer como `healthy`.
 
+5. Gere o Prisma Client e aplique as migrations locais:
+
+   ```bash
+   pnpm prisma:generate
+   pnpm db:migrate:deploy
+   pnpm db:migrate:status
+   ```
+
+   A migration inicial é intencionalmente vazia e cria somente o histórico `_prisma_migrations`.
+
 ## Executar as aplicações
 
 Para iniciar frontend e backend juntos:
@@ -82,24 +93,33 @@ Endereços locais:
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Health da API: [http://localhost:3000/api/v1/health](http://localhost:3000/api/v1/health)
+- Liveness da API: [http://localhost:3000/api/v1/health/live](http://localhost:3000/api/v1/health/live)
+- Readiness da API: [http://localhost:3000/api/v1/health/ready](http://localhost:3000/api/v1/health/ready)
 - Swagger UI: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 
-O frontend usa o proxy do Vite para acessar `/api`. O endpoint `/health` é um liveness check do processo da API; a saúde do PostgreSQL é verificada separadamente pelo Compose.
+O frontend usa o proxy do Vite para acessar `/api`. `/health/live` verifica somente o processo; `/health` e `/health/ready` consultam o PostgreSQL e retornam `503` seguro quando ele estiver indisponível.
 
 ## Comandos do monorepo
 
-| Comando             | Finalidade                                   |
-| ------------------- | -------------------------------------------- |
-| `pnpm dev`          | Executa API e web em paralelo                |
-| `pnpm lint`         | Executa ESLint em todos os workspaces        |
-| `pnpm lint:fix`     | Aplica correções seguras do ESLint           |
-| `pnpm format`       | Formata arquivos com Prettier                |
-| `pnpm format:check` | Confere formatação sem alterar arquivos      |
-| `pnpm typecheck`    | Verifica TypeScript estrito                  |
-| `pnpm test`         | Executa todos os testes uma vez              |
-| `pnpm build`        | Gera builds de API e web                     |
-| `pnpm check`        | Executa todos os gates locais na ordem do CI |
+| Comando                      | Finalidade                                                       |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `pnpm dev`                   | Executa API e web em paralelo                                    |
+| `pnpm lint`                  | Executa ESLint em todos os workspaces                            |
+| `pnpm format:check`          | Confere formatação sem alterar arquivos                          |
+| `pnpm typecheck`             | Verifica TypeScript estrito                                      |
+| `pnpm test`                  | Executa testes unitários                                         |
+| `pnpm test:integration`      | Executa integração da API contra `DATABASE_URL_TEST`             |
+| `pnpm build`                 | Gera builds de API e web                                         |
+| `pnpm prisma:generate`       | Gera o client tipado não versionado                              |
+| `pnpm prisma:validate`       | Valida configuração e schema Prisma                              |
+| `pnpm db:migrate:dev --name` | Cria/aplica migration somente no desenvolvimento local           |
+| `pnpm db:migrate:deploy`     | Aplica migrations versionadas sem fluxo interativo               |
+| `pnpm db:migrate:status`     | Compara migrations locais e aplicadas                            |
+| `pnpm db:migrate:test`       | Aplica migrations em `DATABASE_URL_TEST`                         |
+| `pnpm db:seed`               | Executa seed; atualmente não cria dados                          |
+| `pnpm db:studio`             | Abre Prisma Studio no banco de desenvolvimento                   |
+| `pnpm check`                 | Executa todos os gates; exige o PostgreSQL de testes já saudável |
 
 ## Comandos do frontend
 
@@ -124,6 +144,9 @@ pnpm --filter @closeflow/api lint
 pnpm --filter @closeflow/api typecheck
 pnpm --filter @closeflow/api test
 pnpm --filter @closeflow/api test:watch
+pnpm --filter @closeflow/api test:integration
+pnpm --filter @closeflow/api prisma:generate
+pnpm --filter @closeflow/api prisma:validate
 pnpm --filter @closeflow/api build
 pnpm --filter @closeflow/api start:prod
 ```
@@ -142,6 +165,16 @@ docker compose ps
 # Acompanhar logs
 docker compose logs -f postgres
 
+# Iniciar o banco efêmero de testes
+pnpm db:test:up
+
+# Aplicar migrations e executar integração
+pnpm db:migrate:test
+pnpm test:integration
+
+# Remover somente o container/banco de testes
+pnpm db:test:down
+
 # Parar os serviços preservando dados
 docker compose stop
 
@@ -153,23 +186,31 @@ docker compose down --volumes
 ```
 
 O volume persistente chama-se `closeflow_postgres_data`.
+O serviço `postgres-test` usa `tmpfs`, porta padrão `5433` e desaparece com `pnpm db:test:down`. Ele não compartilha dados nem volume com desenvolvimento.
+
+`pnpm db:reset:local:dangerous` apaga e recria somente o banco `closeflow` em `localhost` quando `NODE_ENV=development`. O guard recusa hosts remotos, outros ambientes e o banco de testes.
 
 ## Variáveis de ambiente
 
-| Variável            | Uso                                                    |
-| ------------------- | ------------------------------------------------------ |
-| `NODE_ENV`          | Ambiente da API: `development`, `test` ou `production` |
-| `API_PORT`          | Porta HTTP da API                                      |
-| `WEB_ORIGIN`        | Origem permitida pelo CORS                             |
-| `VITE_API_BASE_URL` | Prefixo usado pelo frontend para acessar a API         |
-| `LOG_LEVEL`         | Nível dos logs JSON do Pino                            |
-| `POSTGRES_DB`       | Banco local criado pelo container                      |
-| `POSTGRES_USER`     | Usuário local do PostgreSQL                            |
-| `POSTGRES_PASSWORD` | Senha exclusivamente local                             |
-| `POSTGRES_PORT`     | Porta exposta somente em loopback                      |
-| `DATABASE_URL`      | URL futura de acesso da aplicação ao PostgreSQL        |
+| Variável                 | Uso                                                    |
+| ------------------------ | ------------------------------------------------------ |
+| `NODE_ENV`               | Ambiente da API: `development`, `test` ou `production` |
+| `API_PORT`               | Porta HTTP da API                                      |
+| `WEB_ORIGIN`             | Origem permitida pelo CORS                             |
+| `VITE_API_BASE_URL`      | Prefixo usado pelo frontend para acessar a API         |
+| `LOG_LEVEL`              | Nível dos logs JSON do Pino                            |
+| `POSTGRES_DB`            | Banco local criado pelo container                      |
+| `POSTGRES_USER`          | Usuário local do PostgreSQL                            |
+| `POSTGRES_PASSWORD`      | Senha exclusivamente local                             |
+| `POSTGRES_PORT`          | Porta exposta somente em loopback                      |
+| `DATABASE_URL`           | URL usada pela aplicação para acessar o PostgreSQL     |
+| `POSTGRES_TEST_DB`       | Nome do banco descartável de integração                |
+| `POSTGRES_TEST_USER`     | Usuário exclusivamente local de integração             |
+| `POSTGRES_TEST_PASSWORD` | Senha exclusivamente local de integração               |
+| `POSTGRES_TEST_PORT`     | Porta isolada do PostgreSQL de integração              |
+| `DATABASE_URL_TEST`      | URL obrigatória para migrations/testes de integração   |
 
-A API falha no startup se `DATABASE_URL` estiver ausente. Nesta fundação a URL é validada, mas ainda não é usada por um ORM ou módulo de negócio.
+A API falha no startup se `DATABASE_URL` estiver ausente ou não usar PostgreSQL. `DATABASE_URL_TEST` é exigida apenas nos fluxos de integração. URLs e credenciais nunca são retornadas pelo health nem registradas em erros de conexão.
 
 ## Estrutura
 
@@ -178,7 +219,9 @@ apps/
   api/                  # API NestJS e módulos técnicos
     src/common/http/    # Problem Details e filtro global
     src/config/         # validação central do ambiente
-    src/modules/health/ # liveness da API
+    src/modules/health/ # liveness e readiness da API
+    src/shared/database/ # PrismaService central e lifecycle
+    prisma/             # schema sem models, migration baseline e seed vazio
   web/                  # aplicação React/Vite
     src/app/            # providers, Router e Error Boundary
     src/components/     # feedback visual reutilizado
@@ -191,12 +234,12 @@ Não existe pacote compartilhado nesta fase. Um pacote só será criado após re
 
 ## Integração contínua
 
-O workflow `.github/workflows/ci.yml` instala exatamente o lockfile com cache do pnpm e executa:
+O workflow `.github/workflows/ci.yml` provisiona PostgreSQL 17 exclusivo do job, instala exatamente o lockfile com cache do pnpm e executa:
 
-1. formatação;
-2. lint;
-3. typecheck;
-4. testes;
+1. geração e validação do Prisma Client/schema;
+2. `migrate deploy` e `migrate status`;
+3. formatação, lint e typecheck;
+4. testes unitários e de integração;
 5. build.
 
 Não há etapa de deploy.
@@ -207,9 +250,9 @@ Não há etapa de deploy.
 
 Instale Node 24 e habilite o pnpm com Corepack, ou instale pnpm 11 conforme a documentação oficial. Feche e reabra o terminal após alterar o `PATH`.
 
-### Porta 3000, 5173 ou 5432 já está em uso
+### Porta 3000, 5173, 5432 ou 5433 já está em uso
 
-Altere `API_PORT` ou `POSTGRES_PORT` no `.env`. Para a porta do frontend, ajuste `apps/web/vite.config.ts`. Confirme processos e containers existentes antes de encerrá-los.
+Altere `API_PORT`, `POSTGRES_PORT` ou `POSTGRES_TEST_PORT` no `.env`. Para a porta do frontend, ajuste `apps/web/vite.config.ts`. Confirme processos e containers existentes antes de encerrá-los.
 
 ### PostgreSQL não fica `healthy`
 
@@ -223,6 +266,37 @@ Confirme se a porta está livre e se as variáveis do `.env` são consistentes. 
 ```bash
 docker compose down --volumes
 docker compose up -d postgres
+```
+
+Para o banco de testes, use `docker compose --profile test ps` e `docker compose --profile test logs postgres-test`. Remova e recrie somente esse container com `pnpm db:test:down` e `pnpm db:test:up`.
+
+### Prisma Client ausente ou desatualizado
+
+```bash
+pnpm prisma:generate
+pnpm prisma:validate
+```
+
+O diretório gerado é ignorado pelo Git. Não edite os arquivos gerados manualmente.
+
+### Migration pendente ou divergente
+
+```bash
+pnpm db:migrate:status
+pnpm db:migrate:deploy
+```
+
+Use `db:migrate:dev` somente para criar migrations no banco local. CI, testes compartilhados e produção usam `migrate deploy`. Nunca altere migration já aplicada.
+
+### Testes de integração não iniciam
+
+Confirme que `.env` contém `DATABASE_URL_TEST`, que ela aponta para o banco isolado e que o serviço está saudável:
+
+```bash
+pnpm db:test:up
+docker compose --profile test ps
+pnpm db:migrate:test
+pnpm test:integration
 ```
 
 ### API encerra com “Configuração de ambiente inválida”
@@ -259,5 +333,6 @@ Verifique as permissões de `%USERPROFILE%\.docker\config.json` e se o Docker De
 - [Definition of Done](docs/quality/definition-of-done.md)
 - [Roadmap](docs/roadmap/implementation-roadmap.md)
 - [Decisões arquiteturais](docs/decisions/ADR-001-modular-monolith.md)
+- [Convenções de persistência](docs/decisions/ADR-005-persistence-conventions.md)
 
 Toda evolução deve seguir o [AGENTS.md](AGENTS.md), os ADRs aceitos, o roadmap e a Definition of Done.

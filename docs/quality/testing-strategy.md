@@ -15,6 +15,7 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 ### Integração
 
 - Repositórios Prisma contra PostgreSQL real descartável.
+- Fundação de persistência verifica conexão, consulta simples, migrations aplicadas, ausência de tabelas de domínio e health disponível/indisponível.
 - Constraints, transações, concorrência, migrações e isolamento A/B.
 - Módulos NestJS com adapters controlados.
 - Frontend com Testing Library + MSW para formulários, erros e cache.
@@ -57,6 +58,8 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 - Factories tipadas criam organizações A e B e usuários por papel.
 - Cada teste controla relógio e identificadores quando necessário.
 - Integração usa PostgreSQL da mesma versão de produção, provisionado de forma descartável.
+- Localmente, `postgres-test` usa porta e armazenamento separados; `DATABASE_URL_TEST` é obrigatória e nunca pode apontar para produção.
+- No CI, o PostgreSQL pertence exclusivamente ao job e migrations são aplicadas com `migrate deploy`, nunca com `migrate dev`.
 - Migrações são aplicadas do zero em CI e, quando houver baseline, testadas sobre versão anterior.
 - Testes nunca dependem de ordem, internet pública ou dados pessoais reais.
 - E2E usa seletores por papel/nome acessível; `data-testid` somente quando não houver seletor semântico estável.
