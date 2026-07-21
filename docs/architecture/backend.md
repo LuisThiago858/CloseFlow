@@ -66,11 +66,12 @@ Envelope baseline inspirado em Problem Details:
   "detail": "Revise os campos informados.",
   "instance": "/api/v1/closings",
   "correlationId": "...",
-  "errors": [{ "field": "competence", "code": "INVALID_FORMAT" }]
+  "errors": { "competence": ["Formato inválido."] }
 }
 ```
 
 - Não expor stack trace, SQL, segredo, existência de recurso de outro tenant ou detalhes internos.
+- Conflitos de constraint ou transação que não tenham semântica mais específica usam `PERSISTENCE_CONFLICT` com HTTP `409`, sem mencionar Prisma, SQL ou a constraint.
 - Diferenciar autenticação (`401`), autorização (`403`), inexistência segura (`404`), conflito (`409`) e semântica inválida (`422`).
 - Erros esperados são tipados; exceções inesperadas são capturadas, correlacionadas e registradas.
 
@@ -97,10 +98,15 @@ Envelope baseline inspirado em Problem Details:
 
 ## Autenticação e autorização
 
-- Estratégia de credencial será escolhida antes da implementação; cookies `HttpOnly`, `Secure`, `SameSite` são preferidos para app web quando compatíveis.
-- Guards autenticam; contexto de tenant valida associação; policies autorizam ação e recurso.
+- O módulo `Identity` implementa cadastro/login local, Argon2id e sessões opacas conforme ADR-006.
+- Somente SHA-256 do token aleatório de 256 bits é persistido; o token bruto fica em cookie `HttpOnly`, `SameSite=Lax`, `Path=/` e `Secure` em produção.
+- `SessionAuthGuard` consulta sessão e usuário, rejeita expiração/revogação/desativação e disponibiliza um principal tipado sem expor models Prisma.
+- A validade deslizante é de sete dias, renovada nas últimas 24 horas, limitada a 30 dias absolutos; `last_used_at` é atualizado no máximo a cada 15 minutos.
+- Cadastro e login usam rate limit em memória por IP/endpoint. Mais de uma instância exigirá armazenamento distribuído e revisão do proxy confiável.
+- CORS aceita somente `CORS_ALLOWED_ORIGINS`; mutações validam origem/Fetch Metadata e corpos de credencial exigem JSON.
+- Guards autenticam; a futura Fase 4 adicionará contexto de tenant, associação e policies de organização.
 - RBAC é baseline, complementado por escopo de empresa e estado do recurso.
-- Alterações de papel, convite, aprovação e reabertura geram auditoria.
+- Eventos atuais são logs estruturados redigidos. Auditoria persistente de papel, convite, aprovação e reabertura será adicionada no módulo Audit.
 
 ## Jobs e integrações
 

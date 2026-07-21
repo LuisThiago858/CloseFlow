@@ -26,6 +26,7 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 - Inputs, outputs, uploads e erros foram validados e não vazam informação.
 - Segredos e PII não aparecem em código, frontend, fixtures ou logs.
 - Operações sensíveis geram auditoria atômica e redigida.
+- Enquanto o módulo Audit não existe, autenticação registra somente eventos estruturados redigidos; essa limitação impede considerar auditoria completa pronta para produção.
 - Threat model foi atualizado se a superfície mudou.
 
 ## Dados
@@ -42,6 +43,7 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 - Unitários cobrem regras e casos de erro relevantes.
 - Integração cobre persistência, transação e isolamento quando aplicável.
 - E2E cobre jornada crítica nova/alterada proporcionalmente ao risco.
+- Alterações de autenticação cobrem cookie, expiração, revogação, enumeração, CSRF/origem, rate limit e reload no navegador.
 - Concorrência, idempotência e falha externa foram testadas quando relevantes.
 - Todos os gates obrigatórios passam sem flaky conhecido não tratado.
 

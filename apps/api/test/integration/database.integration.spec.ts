@@ -39,7 +39,7 @@ describe('Persistência e health da API', () => {
     await expect(prisma.$queryRaw`SELECT 1`).resolves.toBeDefined();
   });
 
-  it('mantém somente a infraestrutura de migration no schema público', async () => {
+  it('mantém a infraestrutura e as tabelas de identidade no schema público', async () => {
     const tables = await prisma.$queryRaw<TableRow[]>`
       SELECT table_name
       FROM information_schema.tables
@@ -55,9 +55,14 @@ describe('Persistência e health da API', () => {
 
     expect(tables.map(({ table_name }) => table_name)).toEqual([
       '_prisma_migrations',
+      'sessions',
+      'users',
     ]);
     expect(migrations.map(({ migration_name }) => migration_name)).toContain(
       '20260713120000_initialize_persistence',
+    );
+    expect(migrations.map(({ migration_name }) => migration_name)).toContain(
+      '20260717090000_add_identity_and_sessions',
     );
   });
 

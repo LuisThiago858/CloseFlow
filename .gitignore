@@ -1,7 +1,10 @@
 node_modules/
+.agents/
 .pnpm-store/
 dist/
 coverage/
+playwright-report/
+test-results/
 .env
 .env.*
 !.env.example

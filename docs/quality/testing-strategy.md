@@ -15,7 +15,8 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 ### Integração
 
 - Repositórios Prisma contra PostgreSQL real descartável.
-- Fundação de persistência verifica conexão, consulta simples, migrations aplicadas, ausência de tabelas de domínio e health disponível/indisponível.
+- Fundação de persistência verifica conexão, migrations, tabelas `users`/`sessions`, constraints e health disponível/indisponível.
+- Identity verifica transações, concorrência de cadastro, Argon2id, cookie, expiração, revogação, isolamento de sessões, CORS e rate limit contra a API real.
 - Constraints, transações, concorrência, migrações e isolamento A/B.
 - Módulos NestJS com adapters controlados.
 - Frontend com Testing Library + MSW para formulários, erros e cache.
@@ -34,6 +35,7 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 - Fluxo crítico: autenticar, selecionar organização, configurar empresa/template, criar fechamento, executar com evidência, revisar, reprovar/corrigir e aprovar.
 - Acesso cross-tenant, cliente convidado, sessão expirada e troca de organização.
 - Poucos testes, estáveis, com dados isolados e diagnóstico útil.
+- O gate atual usa Playwright/Chromium sobre builds de API e web para cadastro, login, reload da sessão, logout, acesso anônimo, erro genérico e navegação básica por teclado.
 
 ### Não funcionais
 
@@ -44,14 +46,14 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 
 ## Matriz mínima por risco
 
-| Área         | Unitário              | Integração                          | E2E                       | Segurança                     |
-| ------------ | --------------------- | ----------------------------------- | ------------------------- | ----------------------------- |
-| Auth/sessão  | Regras de expiração   | Sessão/revogação                    | Login/logout/reset        | brute force, CSRF, enumeração |
-| Multitenancy | Policies              | Repositórios e agregações A/B       | troca de organização      | IDOR e cache leakage          |
-| Fechamento   | Transições/progresso  | constraint, snapshot e concorrência | jornada completa          | ação fora do papel/estado     |
-| Evidências   | regras de estado/tipo | metadata/storage adapter            | upload/download           | arquivo malicioso e URL       |
-| Revisão      | segregação/transições | atomicidade/auditoria               | reprovar/corrigir/aprovar | replay/escalada               |
-| Dashboard    | cálculo/filtros       | queries com volume e tenant         | drill-down                | agregação cruzada             |
+| Área         | Unitário              | Integração                          | E2E                       | Segurança                    |
+| ------------ | --------------------- | ----------------------------------- | ------------------------- | ---------------------------- |
+| Auth/sessão  | Expiração/hash/token  | Sessão/revogação/concorrência       | Cadastro/login/logout     | rate limit, CSRF, enumeração |
+| Multitenancy | Policies              | Repositórios e agregações A/B       | troca de organização      | IDOR e cache leakage         |
+| Fechamento   | Transições/progresso  | constraint, snapshot e concorrência | jornada completa          | ação fora do papel/estado    |
+| Evidências   | regras de estado/tipo | metadata/storage adapter            | upload/download           | arquivo malicioso e URL      |
+| Revisão      | segregação/transições | atomicidade/auditoria               | reprovar/corrigir/aprovar | replay/escalada              |
+| Dashboard    | cálculo/filtros       | queries com volume e tenant         | drill-down                | agregação cruzada            |
 
 ## Dados e ambiente
 
@@ -63,11 +65,12 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 - Migrações são aplicadas do zero em CI e, quando houver baseline, testadas sobre versão anterior.
 - Testes nunca dependem de ordem, internet pública ou dados pessoais reais.
 - E2E usa seletores por papel/nome acessível; `data-testid` somente quando não houver seletor semântico estável.
+- Localmente, instale uma vez o Chromium com `pnpm test:e2e:install`; `pnpm test:e2e` usa API na porta 3100 e preview web na 4173.
 
 ## Cobertura e gates
 
 - Cobertura é sinal, não objetivo isolado. Baseline inicial sugerida: 80% de linhas/branches nos módulos de domínio/aplicação críticos, ajustada com evidência.
-- `main` exige lint, formatação, typecheck, testes unitários/integração, build, OpenAPI e scans.
+- `main` exige lint, formatação, typecheck, testes unitários/integração/E2E, build e validação OpenAPI.
 - E2E crítico roda em pull requests quando duração for aceitável e obrigatoriamente antes de release.
 - Flaky test é defeito: corrigir ou isolar com owner e prazo; não repetir até passar como estratégia.
 - Nenhum merge com teste obrigatório vermelho ou risco crítico não aceito.

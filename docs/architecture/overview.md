@@ -15,8 +15,7 @@ Frontend React -----> API REST NestJS -----> PostgreSQL
                             |                    (dados e metadados)
                             +---------------> Object Storage privado
                             |                    (anexos)
-                            +---------------> E-mail/provedor de identidade
-                                                 (a definir)
+                            +---------------> E-mail/provedor externo futuro
 ```
 
 Redis/BullMQ não fazem parte do caminho crítico inicial. Serão adicionados apenas para trabalho assíncrono durável, retentativas ou carga que não seja atendida com segurança por mecanismos mais simples.
@@ -44,7 +43,7 @@ Não criar pacotes `shared`, `common` ou `utils` genéricos. Código só sobe pa
 
 ## Módulos de negócio candidatos
 
-- **Identity:** credenciais, sessões, recuperação e identidade do usuário.
+- **Identity:** cadastro/login local, credenciais Argon2id, sessões opacas e identidade global do usuário. Recuperação permanece futura.
 - **Organizations:** organização, associações, papéis, convites e contexto ativo.
 - **Companies:** empresas gerenciadas e escopos de acesso.
 - **ClosingTemplates:** modelos, versões, etapas e tarefas de modelo.

@@ -4,6 +4,12 @@ Esta baseline é requisito mínimo do MVP e deve ser transformada em controles v
 
 ## Identidade e sessão
 
+- A implementação local segue ADR-006: Argon2id (`m=19456 KiB`, `t=2`, `p=1`), token aleatório de 256 bits e somente SHA-256 persistido.
+- Senhas aceitam passphrases de 12 a 128 caracteres, sem truncamento ou composição artificial; e-mail é normalizado por trim, NFKC e lowercase.
+- Cookies usam `HttpOnly`, `SameSite=Lax`, `Path=/`, sem `Domain`, e `Secure` obrigatório em produção. Expiração do cookie acompanha a sessão persistida.
+- Sessões são novas em cada cadastro/login, revogáveis individualmente, renovadas de forma controlada e limitadas a 30 dias absolutos.
+- CORS usa allowlist exata com credenciais. Mutações de autenticação validam `Origin`/`Sec-Fetch-Site` e credenciais aceitam somente JSON.
+- Rate limiting atual é por processo e IP; múltiplas instâncias exigirão armazenamento distribuído e configuração explícita de proxy confiável.
 - Senhas, se mantidas internamente, usam algoritmo resistente e parâmetros atuais (Argon2id preferencial), nunca criptografia reversível.
 - Login, recuperação, convite e endpoints sensíveis têm rate limit e respostas que evitam enumeração.
 - Tokens aleatórios têm entropia adequada, validade curta, uso único e armazenamento em hash quando recuperáveis por link.
@@ -11,6 +17,7 @@ Esta baseline é requisito mínimo do MVP e deve ser transformada em controles v
 - Para app web, preferir cookie `HttpOnly`, `Secure` e `SameSite` compatível; proteção CSRF é obrigatória quando autenticação baseada em cookie permitir requisições cross-site.
 - MFA e SSO são decisões pré-lançamento/pós-MVP conforme perfil de risco; contas administrativas devem ser priorizadas.
 - Não registrar senha, token, cookie ou link completo de recuperação/convite.
+- O logging HTTP usa allowlist e não persiste headers, IP, User-Agent ou fingerprint; rate limiting por IP permanece apenas na memória do processo nesta fase.
 
 ## Autorização e multitenancy
 
@@ -90,3 +97,5 @@ Antes do piloto com dados reais, definir responsáveis, canal, severidades, cont
 - Monitoramento e alertas de segurança ativos.
 - Dependências e imagem sem vulnerabilidade crítica conhecida não aceita.
 - Plano de incidente e contatos disponíveis.
+
+Antes de produção também são obrigatórias revisão dos parâmetros Argon2id na infraestrutura real, validação de TLS/`Secure`, política de limpeza das sessões expiradas e decisão sobre MFA/recuperação de conta.

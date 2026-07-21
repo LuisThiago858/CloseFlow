@@ -17,6 +17,8 @@ if (testDatabaseUrl === undefined || testDatabaseUrl.trim().length === 0) {
 
 process.env.NODE_ENV = 'test';
 process.env.API_PORT = '3000';
-process.env.WEB_ORIGIN = 'http://localhost:5173';
+process.env.CORS_ALLOWED_ORIGINS =
+  'http://localhost:5173,http://127.0.0.1:4173';
 process.env.LOG_LEVEL = 'silent';
 process.env.DATABASE_URL = testDatabaseUrl;
+process.env.AUTH_RATE_LIMIT_MAX = '100';

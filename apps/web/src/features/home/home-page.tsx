@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 import { ErrorState } from '../../components/feedback/error-state';
 import { LoadingState } from '../../components/feedback/loading-state';
@@ -19,6 +20,14 @@ export function HomePage() {
           Controle operacional e governança para fechamentos financeiros
           mensais.
         </p>
+        <nav className="hero-actions" aria-label="Acesso à conta">
+          <Link className="button-link" to="/login">
+            Entrar
+          </Link>
+          <Link className="secondary-link" to="/register">
+            Criar conta
+          </Link>
+        </nav>
 
         <div className="health-panel" aria-labelledby="health-title">
           <h2 id="health-title">Estado dos serviços</h2>

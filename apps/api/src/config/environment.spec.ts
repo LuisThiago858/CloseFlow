@@ -6,12 +6,22 @@ describe('validateEnvironment', () => {
   it('aplica defaults seguros à configuração mínima', () => {
     expect(
       validateEnvironment({ DATABASE_URL: 'postgresql://local/test' }),
-    ).toEqual({
+    ).toMatchObject({
       NODE_ENV: 'development',
       API_PORT: 3000,
-      WEB_ORIGIN: 'http://localhost:5173',
+      CORS_ALLOWED_ORIGINS: ['http://localhost:5173', 'http://127.0.0.1:4173'],
       LOG_LEVEL: 'info',
       DATABASE_URL: 'postgresql://local/test',
+      AUTH_COOKIE_NAME: 'closeflow_session',
+      AUTH_SESSION_TTL_SECONDS: 604_800,
+      AUTH_SESSION_ABSOLUTE_TTL_SECONDS: 2_592_000,
+      AUTH_SESSION_RENEWAL_WINDOW_SECONDS: 86_400,
+      AUTH_SESSION_ACTIVITY_INTERVAL_SECONDS: 900,
+      AUTH_ARGON2_MEMORY_KIB: 19_456,
+      AUTH_ARGON2_TIME_COST: 2,
+      AUTH_ARGON2_PARALLELISM: 1,
+      AUTH_RATE_LIMIT_MAX: 5,
+      AUTH_RATE_LIMIT_WINDOW_MS: 60_000,
     });
   });
 
@@ -34,5 +44,39 @@ describe('validateEnvironment', () => {
         DATABASE_URL_TEST: 'https://localhost/closeflow_test',
       }),
     ).toThrow('DATABASE_URL_TEST deve usar o protocolo PostgreSQL');
+  });
+
+  it('rejeita CORS curinga e origens com caminho', () => {
+    expect(() =>
+      validateEnvironment({
+        DATABASE_URL: 'postgresql://local/closeflow',
+        CORS_ALLOWED_ORIGINS: '*',
+      }),
+    ).toThrow('não aceita origem vazia ou curinga');
+    expect(() =>
+      validateEnvironment({
+        DATABASE_URL: 'postgresql://local/closeflow',
+        CORS_ALLOWED_ORIGINS: 'https://closeflow.example/app',
+      }),
+    ).toThrow('origens HTTP ou HTTPS canônicas');
+  });
+
+  it('rejeita parâmetros Argon2id abaixo do mínimo', () => {
+    expect(() =>
+      validateEnvironment({
+        DATABASE_URL: 'postgresql://local/closeflow',
+        AUTH_ARGON2_MEMORY_KIB: 8_192,
+      }),
+    ).toThrow('AUTH_ARGON2_MEMORY_KIB');
+  });
+
+  it('rejeita relações inválidas no ciclo da sessão', () => {
+    expect(() =>
+      validateEnvironment({
+        DATABASE_URL: 'postgresql://local/closeflow',
+        AUTH_SESSION_TTL_SECONDS: 3_600,
+        AUTH_SESSION_RENEWAL_WINDOW_SECONDS: 3_600,
+      }),
+    ).toThrow('A janela de renovação deve ser menor');
   });
 });

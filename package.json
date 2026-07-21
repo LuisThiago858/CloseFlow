@@ -32,10 +32,13 @@
     "db:test:up": "docker compose --profile test up -d postgres-test",
     "db:test:down": "docker compose --profile test rm --stop --force postgres-test",
     "test:integration": "pnpm --filter @closeflow/api test:integration",
-    "check": "pnpm format:check && pnpm lint && pnpm prisma:validate && pnpm prisma:generate && pnpm typecheck && pnpm test && pnpm db:migrate:test && pnpm test:integration && pnpm build"
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
+    "check": "pnpm format:check && pnpm lint && pnpm prisma:validate && pnpm prisma:generate && pnpm typecheck && pnpm test && pnpm db:migrate:test && pnpm test:integration && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.61.1",
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
     "eslint-plugin-react-hooks": "^7.1.1",
