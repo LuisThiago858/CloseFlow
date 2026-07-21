@@ -2,6 +2,15 @@
 
 As regras usam identificadores estáveis para facilitar rastreamento em histórias, testes e decisões.
 
+## Identidade e sessão
+
+- **BR-ID-001:** e-mail é normalizado de forma determinística e único globalmente; usuário não recebe papel global de negócio.
+- **BR-ID-002:** senha existe somente durante a requisição e como hash Argon2id persistido; nunca é retornada ou registrada.
+- **BR-ID-003:** cada cadastro/login cria token opaco novo, armazena somente seu hash e não reutiliza sessão apresentada.
+- **BR-ID-004:** sessão expirada, revogada ou de usuário desabilitado não autentica; logout atual é imediato e idempotente.
+- **BR-ID-005:** respostas de login não diferenciam e-mail inexistente, senha incorreta ou usuário desabilitado.
+- **BR-ID-006:** usuário só lista e revoga sessões próprias; tentativa com identificador alheio não revela existência.
+
 ## Organização e acesso
 
 - **BR-ORG-001:** todo recurso de negócio pertence a exatamente uma organização, direta ou transitivamente.

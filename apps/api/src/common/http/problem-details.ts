@@ -6,4 +6,5 @@ export interface ProblemDetails {
   detail: string;
   instance: string;
   correlationId: string;
+  errors?: Readonly<Record<string, readonly string[]>>;
 }

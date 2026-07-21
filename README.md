@@ -4,16 +4,18 @@ CloseFlow é uma plataforma SaaS B2B de controle operacional e governança do fe
 
 ## Estado do projeto
 
-O repositório contém a fundação técnica e de persistência, ainda sem funcionalidades de negócio:
+O repositório contém a fundação técnica, persistência e autenticação local da Fase 3, ainda sem funcionalidades financeiras:
 
 - monorepo com pnpm workspaces;
 - frontend React/Vite com Router, TanStack Query, Tailwind e testes;
 - API NestJS com liveness/readiness, ambiente validado, logs estruturados, Problem Details e OpenAPI;
-- Prisma 7 com adapter PostgreSQL, módulo central de banco e migration baseline vazia;
+- Prisma 7 com adapter PostgreSQL, módulo central de banco e migrations de `users`/`sessions`;
+- cadastro, login, logout, `/auth/me`, listagem/revogação de sessões, Argon2id e cookies seguros;
+- frontend mínimo de cadastro/login e rota protegida, sem armazenar tokens no JavaScript;
 - PostgreSQL persistente para desenvolvimento e instância efêmera isolada para integração;
-- lint, formatação, typecheck, testes unitários/integração, build e CI com PostgreSQL real.
+- lint, formatação, typecheck, testes unitários/integração/E2E, build e CI com PostgreSQL real e Chromium.
 
-Autenticação, organizações, models/tabelas de negócio, Redis, filas, uploads e integrações ainda não foram implementados.
+Organizações, memberships, papéis, recuperação de senha, MFA, models financeiros, Redis, filas, uploads e integrações ainda não foram implementados.
 
 ## Requisitos locais
 
@@ -21,6 +23,7 @@ Autenticação, organizações, models/tabelas de negócio, Redis, filas, upload
 - pnpm 11 ou superior;
 - Docker Desktop com Docker Compose v2;
 - Git.
+- Chromium do Playwright para executar o gate E2E.
 
 Confirme o ambiente:
 
@@ -53,6 +56,7 @@ docker compose version
 
    ```bash
    pnpm install --frozen-lockfile
+   pnpm test:e2e:install
    ```
 
 4. Inicie o PostgreSQL:
@@ -72,7 +76,7 @@ docker compose version
    pnpm db:migrate:status
    ```
 
-   A migration inicial é intencionalmente vazia e cria somente o histórico `_prisma_migrations`.
+   A baseline permanece vazia; a migration seguinte cria somente `users`, `sessions`, índices e constraints da autenticação.
 
 ## Executar as aplicações
 
@@ -97,29 +101,34 @@ Endereços locais:
 - Readiness da API: [http://localhost:3000/api/v1/health/ready](http://localhost:3000/api/v1/health/ready)
 - Swagger UI: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
+- Cadastro: [http://localhost:5173/register](http://localhost:5173/register)
+- Login: [http://localhost:5173/login](http://localhost:5173/login)
+- Rota protegida temporária: [http://localhost:5173/app](http://localhost:5173/app)
 
-O frontend usa o proxy do Vite para acessar `/api`. `/health/live` verifica somente o processo; `/health` e `/health/ready` consultam o PostgreSQL e retornam `503` seguro quando ele estiver indisponível.
+O frontend usa o proxy do Vite para acessar `/api` com cookies. Em desenvolvimento o cookie não usa `Secure`; em produção esse atributo é obrigatório. `/health/live` verifica somente o processo; `/health` e `/health/ready` consultam o PostgreSQL e retornam `503` seguro quando ele estiver indisponível.
 
 ## Comandos do monorepo
 
-| Comando                      | Finalidade                                                       |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `pnpm dev`                   | Executa API e web em paralelo                                    |
-| `pnpm lint`                  | Executa ESLint em todos os workspaces                            |
-| `pnpm format:check`          | Confere formatação sem alterar arquivos                          |
-| `pnpm typecheck`             | Verifica TypeScript estrito                                      |
-| `pnpm test`                  | Executa testes unitários                                         |
-| `pnpm test:integration`      | Executa integração da API contra `DATABASE_URL_TEST`             |
-| `pnpm build`                 | Gera builds de API e web                                         |
-| `pnpm prisma:generate`       | Gera o client tipado não versionado                              |
-| `pnpm prisma:validate`       | Valida configuração e schema Prisma                              |
-| `pnpm db:migrate:dev --name` | Cria/aplica migration somente no desenvolvimento local           |
-| `pnpm db:migrate:deploy`     | Aplica migrations versionadas sem fluxo interativo               |
-| `pnpm db:migrate:status`     | Compara migrations locais e aplicadas                            |
-| `pnpm db:migrate:test`       | Aplica migrations em `DATABASE_URL_TEST`                         |
-| `pnpm db:seed`               | Executa seed; atualmente não cria dados                          |
-| `pnpm db:studio`             | Abre Prisma Studio no banco de desenvolvimento                   |
-| `pnpm check`                 | Executa todos os gates; exige o PostgreSQL de testes já saudável |
+| Comando                      | Finalidade                                                    |
+| ---------------------------- | ------------------------------------------------------------- |
+| `pnpm dev`                   | Executa API e web em paralelo                                 |
+| `pnpm lint`                  | Executa ESLint em todos os workspaces                         |
+| `pnpm format:check`          | Confere formatação sem alterar arquivos                       |
+| `pnpm typecheck`             | Verifica TypeScript estrito                                   |
+| `pnpm test`                  | Executa testes unitários                                      |
+| `pnpm test:integration`      | Executa integração da API contra `DATABASE_URL_TEST`          |
+| `pnpm test:e2e`              | Executa os fluxos web reais com API, preview e Chromium       |
+| `pnpm test:e2e:install`      | Instala o Chromium gerenciado pelo Playwright                 |
+| `pnpm build`                 | Gera builds de API e web                                      |
+| `pnpm prisma:generate`       | Gera o client tipado não versionado                           |
+| `pnpm prisma:validate`       | Valida configuração e schema Prisma                           |
+| `pnpm db:migrate:dev --name` | Cria/aplica migration somente no desenvolvimento local        |
+| `pnpm db:migrate:deploy`     | Aplica migrations versionadas sem fluxo interativo            |
+| `pnpm db:migrate:status`     | Compara migrations locais e aplicadas                         |
+| `pnpm db:migrate:test`       | Aplica migrations em `DATABASE_URL_TEST`                      |
+| `pnpm db:seed`               | Executa seed; atualmente não cria dados                       |
+| `pnpm db:studio`             | Abre Prisma Studio no banco de desenvolvimento                |
+| `pnpm check`                 | Executa todos os gates; exige PostgreSQL de testes e Chromium |
 
 ## Comandos do frontend
 
@@ -196,7 +205,7 @@ O serviço `postgres-test` usa `tmpfs`, porta padrão `5433` e desaparece com `p
 | ------------------------ | ------------------------------------------------------ |
 | `NODE_ENV`               | Ambiente da API: `development`, `test` ou `production` |
 | `API_PORT`               | Porta HTTP da API                                      |
-| `WEB_ORIGIN`             | Origem permitida pelo CORS                             |
+| `CORS_ALLOWED_ORIGINS`   | Lista exata de origens CORS separadas por vírgula      |
 | `VITE_API_BASE_URL`      | Prefixo usado pelo frontend para acessar a API         |
 | `LOG_LEVEL`              | Nível dos logs JSON do Pino                            |
 | `POSTGRES_DB`            | Banco local criado pelo container                      |
@@ -210,6 +219,21 @@ O serviço `postgres-test` usa `tmpfs`, porta padrão `5433` e desaparece com `p
 | `POSTGRES_TEST_PORT`     | Porta isolada do PostgreSQL de integração              |
 | `DATABASE_URL_TEST`      | URL obrigatória para migrations/testes de integração   |
 
+Variáveis de autenticação:
+
+| Variável                                 | Uso                                            |
+| ---------------------------------------- | ---------------------------------------------- |
+| `AUTH_COOKIE_NAME`                       | Nome do cookie opaco                           |
+| `AUTH_SESSION_TTL_SECONDS`               | Validade deslizante da sessão                  |
+| `AUTH_SESSION_ABSOLUTE_TTL_SECONDS`      | Limite absoluto desde a criação                |
+| `AUTH_SESSION_RENEWAL_WINDOW_SECONDS`    | Janela em que a expiração pode ser renovada    |
+| `AUTH_SESSION_ACTIVITY_INTERVAL_SECONDS` | Intervalo mínimo entre escritas de atividade   |
+| `AUTH_ARGON2_MEMORY_KIB`                 | Memória do Argon2id, nunca abaixo de 19456 KiB |
+| `AUTH_ARGON2_TIME_COST`                  | Iterações Argon2id, nunca abaixo de 2          |
+| `AUTH_ARGON2_PARALLELISM`                | Paralelismo Argon2id                           |
+| `AUTH_RATE_LIMIT_MAX`                    | Tentativas por endpoint e janela               |
+| `AUTH_RATE_LIMIT_WINDOW_MS`              | Janela do rate limit em memória                |
+
 A API falha no startup se `DATABASE_URL` estiver ausente ou não usar PostgreSQL. `DATABASE_URL_TEST` é exigida apenas nos fluxos de integração. URLs e credenciais nunca são retornadas pelo health nem registradas em erros de conexão.
 
 ## Estrutura
@@ -220,8 +244,9 @@ apps/
     src/common/http/    # Problem Details e filtro global
     src/config/         # validação central do ambiente
     src/modules/health/ # liveness e readiness da API
+    src/modules/identity/ # domínio, casos de uso, Prisma e HTTP de autenticação
     src/shared/database/ # PrismaService central e lifecycle
-    prisma/             # schema sem models, migration baseline e seed vazio
+    prisma/             # schema, migrations de identidade e seed vazio
   web/                  # aplicação React/Vite
     src/app/            # providers, Router e Error Boundary
     src/components/     # feedback visual reutilizado
@@ -240,7 +265,8 @@ O workflow `.github/workflows/ci.yml` provisiona PostgreSQL 17 exclusivo do job,
 2. `migrate deploy` e `migrate status`;
 3. formatação, lint e typecheck;
 4. testes unitários e de integração;
-5. build.
+5. build;
+6. Playwright/Chromium com os fluxos essenciais de autenticação.
 
 Não há etapa de deploy.
 
@@ -299,6 +325,27 @@ pnpm db:migrate:test
 pnpm test:integration
 ```
 
+### Testes E2E não iniciam
+
+Instale o navegador e confirme que as portas 3100 e 4173 estão livres:
+
+```bash
+pnpm test:e2e:install
+pnpm build
+pnpm db:migrate:test
+pnpm test:e2e
+```
+
+O Playwright usa a API na porta 3100 para não conflitar com o desenvolvimento em 3000. Se uma execução for interrompida, confirme e encerre somente os processos temporários `node dist/main.js` ou `vite preview` antes de repetir.
+
+### Cookie não é enviado ou a origem é recusada
+
+Use o frontend pelo endereço listado em `CORS_ALLOWED_ORIGINS` e mantenha `credentials: include`. Não use `*` com cookies. Após alterar origem ou `API_PORT`, reinicie API e Vite. Em produção, HTTPS é obrigatório porque o cookie sempre usa `Secure`.
+
+### Login retorna `429`
+
+O limite padrão é cinco tentativas por endpoint em 60 segundos e reside na memória do processo. Aguarde a janela ou ajuste somente o ambiente local. Múltiplas instâncias exigirão rate limit distribuído antes do deploy.
+
 ### API encerra com “Configuração de ambiente inválida”
 
 Confirme que `.env` existe na raiz e contém todas as variáveis de `.env.example`. A API valida configuração antes de abrir a porta.
@@ -334,5 +381,6 @@ Verifique as permissões de `%USERPROFILE%\.docker\config.json` e se o Docker De
 - [Roadmap](docs/roadmap/implementation-roadmap.md)
 - [Decisões arquiteturais](docs/decisions/ADR-001-modular-monolith.md)
 - [Convenções de persistência](docs/decisions/ADR-005-persistence-conventions.md)
+- [Sessões opacas no PostgreSQL](docs/decisions/ADR-006-opaque-database-sessions.md)
 
 Toda evolução deve seguir o [AGENTS.md](AGENTS.md), os ADRs aceitos, o roadmap e a Definition of Done.

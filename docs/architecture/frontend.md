@@ -30,6 +30,7 @@ Cada feature pode conter `routes`, `components`, `queries`, `mutations`, `schema
 ## Rotas e navegação
 
 - React Router com layouts para autenticação e aplicação.
+- A implementação atual oferece `/login`, `/register` e `/app`; `/app` é uma rota protegida temporária, sem dashboard de negócio.
 - Organização ativa aparece em contexto navegável e é validada pelo servidor.
 - Rotas sugeridas: `/login`, `/org/:orgSlug/dashboard`, `/companies`, `/templates`, `/closings/:closingId`, `/reviews` e `/settings/members`.
 - IDs/slugs da URL não concedem acesso; respostas `404/403` devem ter experiência segura.
@@ -38,6 +39,7 @@ Cada feature pode conter `routes`, `components`, `queries`, `mutations`, `schema
 ## Dados e contratos
 
 - Cliente HTTP único adiciona correlação e credenciais adequadas, normaliza Problem Details e trata sessão expirada.
+- Todas as chamadas usam `credentials: include`; o estado de autenticação é a query `['auth', 'me']` e nunca contém o token opaco.
 - Tipos de transporte são preferencialmente gerados do OpenAPI.
 - Zod valida entradas de formulário e, em fronteiras de risco, respostas externas; não duplicar todas as regras do domínio.
 - Query keys incluem organização ativa e filtros para impedir colisões de cache.
@@ -71,7 +73,8 @@ Toda tela remota relevante considera: carregando, vazio, sucesso, erro, sem perm
 
 ## Segurança no cliente
 
-- Não armazenar tokens de longa duração em `localStorage` se cookies seguros forem adotados.
+- Tokens não são armazenados em `localStorage` ou `sessionStorage`; o navegador gerencia exclusivamente o cookie `HttpOnly`.
+- Login e cadastro não diferenciam tecnicamente e-mail inexistente de senha incorreta na mensagem de credenciais.
 - Não renderizar HTML não confiável; comentários começam como texto simples.
 - Não incluir segredos no bundle ou logs.
 - Downloads usam URLs temporárias obtidas após autorização.

@@ -1,6 +1,6 @@
 # Modelo de dados conceitual
 
-Este documento orienta o desenho; não é um schema Prisma definitivo. A migration de fundação é intencionalmente vazia. Nomes e cardinalidades devem ser validados com casos de uso e testes antes de cada migration de domínio.
+Este documento orienta o desenho. A baseline da Fase 2 permanece vazia; a Fase 3 materializa somente `users` e `sessions`. Demais nomes e cardinalidades devem ser validados antes de cada migration de domínio.
 
 ## Convenções
 
@@ -18,7 +18,11 @@ Este documento orienta o desenho; não é um schema Prisma definitivo. A migrati
 
 ### User
 
-Identidade global: `id`, e-mail normalizado único, nome, estado e dados de autenticação/referência externa. Não contém papel global de negócio.
+Identidade global já implementada: UUID, `email`, `normalized_email` único, `password_hash`, estado `ACTIVE`/`DISABLED`, criação, atualização e último login. O estado usa texto com `CHECK`, permitindo evolução deliberada por migration sem enum PostgreSQL. Não contém papel global, perfil pessoal ou organização.
+
+### Session
+
+Sessão global já implementada: UUID, usuário, SHA-256 do token opaco, criação, última atividade, expiração, revogação e motivo. O token bruto, IP, User-Agent e fingerprint não são persistidos. Índices sustentam lookup único pelo hash e listagem das sessões do usuário.
 
 ### Organization
 
@@ -93,7 +97,9 @@ Quando necessário: organização, ator/escopo, chave, operação, hash da requi
 ## Relações principais
 
 ```text
-User --< Membership >-- Organization --< Company
+User --< Session
+ |
+ +--< Membership >-- Organization --< Company
                               |             |
                               |             +--< Closing --< ClosingStage --< ClosingTask
                               |                              |                 |

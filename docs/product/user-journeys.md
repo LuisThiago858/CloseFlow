@@ -1,5 +1,16 @@
 # Jornadas do usuário
 
+## Acesso inicial
+
+1. A pessoa cria uma conta com e-mail e passphrase válidos ou entra com credenciais existentes.
+2. O backend cria uma sessão opaca nova e o navegador recebe somente um cookie `HttpOnly`.
+3. A rota protegida consulta `/auth/me`; reload mantém a sessão enquanto válida.
+4. Logout revoga imediatamente a sessão e limpa o cookie.
+
+**Exceções:** e-mail duplicado no cadastro, credenciais inválidas com mensagem uniforme, rate limit, sessão ausente, expirada, revogada ou usuário desabilitado.
+
+**Limites atuais:** recuperação, confirmação de e-mail, MFA, organização e papéis pertencem a fases futuras.
+
 ## 1. Configurar organização e equipe
 
 1. O administrador entra em uma organização válida.

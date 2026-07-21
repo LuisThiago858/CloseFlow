@@ -56,29 +56,45 @@
 
 **Condição de conclusão:** onboarding documentado reproduz os bancos de desenvolvimento/teste, migrations e gates sem criar tabela de domínio, usar credencial real ou executar comando destrutivo fora do banco local permitido.
 
-## Fase 3 — Identidade, organizações e isolamento base
+## Fase 3 — Autenticação local e sessões opacas
 
-**Objetivo:** autenticar usuários e estabelecer contexto de organização seguro.
+**Objetivo:** autenticar uma identidade global com credenciais locais e sessões revogáveis, sem antecipar tenant ou autorização de negócio.
 
-**Funcionalidades/entregáveis:** login/logout/recuperação conforme decisão; Organization, Membership e Invitation; seleção de organização; papéis predefinidos; guards/policies; TenantContext; repositório tenant-aware; auditoria de acessos administrativos.
+**Funcionalidades/entregáveis:** `User` e `Session`; cadastro/login/logout/me; listagem e revogação individual de sessões; Argon2id; token opaco com somente hash persistido; cookie seguro; validade deslizante com limite absoluto; guard tipado; CORS/origin check; rate limit em memória; interface web mínima; ADR-006.
 
-**Dependências:** Fases 0 a 2; provedor de e-mail/identidade; estratégia CSRF/sessão; decisão RLS.
+**Dependências:** Fases 1 e 2; PostgreSQL real; decisão de sessão registrada no ADR-006.
 
-**Riscos:** sequestro de sessão, enumeração, escalada de papel, convite reutilizado e bypass de tenant.
+**Riscos:** roubo/fixação de sessão, enumeração, força bruta, CSRF, token em logs, concorrência de cadastro e indisponibilidade do banco.
+
+**Critérios de aceitação:** senha e token bruto nunca persistem/retornam; login inválido é uniforme; logout é idempotente; sessão expirada/revogada/desabilitada é recusada; usuário só gerencia sessões próprias; cookie/CORS/rate limit seguem a baseline; frontend não usa Web Storage.
+
+**Testes necessários:** unitários de e-mail, senha, Argon2id, token, sessão, cookie e casos de uso; integração PostgreSQL de migration, transação, concorrência, HTTP e segurança; E2E de cadastro, login, reload, logout, acesso anônimo e teclado.
+
+**Condição de conclusão:** `pnpm check` passa com PostgreSQL e Chromium, OpenAPI/documentação correspondem à entrega e nenhuma organização, membership, papel ou permissão foi criada.
+
+## Fase 4 — Organizações e isolamento base
+
+**Objetivo:** estabelecer o contexto de organização e autorização tenant-aware sobre a identidade global já autenticada.
+
+**Funcionalidades/entregáveis:** Organization, Membership e Invitation; seleção de organização; papéis predefinidos; guards/policies; TenantContext; repositórios tenant-aware; revogação organizacional; auditoria de acessos administrativos.
+
+**Dependências:** Fase 3; provedor de e-mail para convites; matriz RBAC; decisão RLS.
+
+**Riscos:** escalada de papel, convite reutilizado, bypass de tenant, último administrador removido e cache contaminado entre organizações.
 
 **Critérios de aceitação:** usuário alterna apenas entre organizações das quais participa; convite expira e é uso único; último admin é protegido; operações cross-tenant são negadas sem vazamento.
 
-**Testes necessários:** unitários de sessão/policy; integração de memberships e tokens; e2e de login, convite, revogação e troca; matriz A/B; rate limit e CSRF conforme arquitetura.
+**Testes necessários:** unitários de policies; integração de memberships/convites; E2E de convite, revogação e troca; matriz A/B; auditoria e cache tenant-aware.
 
-**Condição de conclusão:** threat cases TM-01 a TM-04 relevantes passam e auditoria permite reconstruir mudanças de acesso.
+**Condição de conclusão:** threat cases TM-01/TM-02 passam e auditoria permite reconstruir mudanças de acesso sem antecipar empresas gerenciadas.
 
-## Fase 4 — Empresas e escopo do cliente convidado
+## Fase 5 — Empresas e escopo do cliente convidado
 
 **Objetivo:** gerenciar empresas e limitar convidados ao conjunto explicitamente autorizado.
 
 **Funcionalidades/entregáveis:** CRUD/arquivamento de Company; responsáveis; CompanyAccess; listagem/filtros; páginas de empresa; policies por empresa.
 
-**Dependências:** Fase 3; definição dos campos mínimos e tratamento de documento fiscal.
+**Dependências:** Fase 4; definição dos campos mínimos e tratamento de documento fiscal.
 
 **Riscos:** vazamento em listagens/autocomplete, PII desnecessária, convidado com acesso agregado e exclusão de histórico.
 
@@ -88,13 +104,13 @@
 
 **Condição de conclusão:** duas organizações e dois convidados podem operar sem qualquer dado cruzado em todos os endpoints e telas da fase.
 
-## Fase 5 — Modelos versionados de fechamento
+## Fase 6 — Modelos versionados de fechamento
 
 **Objetivo:** permitir definir um processo reutilizável, ordenado e publicável.
 
 **Funcionalidades/entregáveis:** modelo em rascunho; etapas/tarefas; ordenação; prioridade; prazos relativos; evidência obrigatória; responsável sugerido; publicação/versionamento; duplicação e arquivamento.
 
-**Dependências:** Fase 4; regras de data-base, modelo/version e responsabilidades.
+**Dependências:** Fase 5; regras de data-base, modelo/version e responsabilidades.
 
 **Riscos:** editor complexo, versão mutável, cálculo de prazo ambíguo e modelo inválido publicado.
 
@@ -104,13 +120,13 @@
 
 **Condição de conclusão:** modelo real de cliente-piloto é representável sem exceção manual e pode ser publicado/reutilizado com histórico.
 
-## Fase 6 — Instanciação e execução do fechamento
+## Fase 7 — Instanciação e execução do fechamento
 
 **Objetivo:** gerar uma competência a partir de snapshot e executar tarefas com segurança.
 
 **Funcionalidades/entregáveis:** criação idempotente; snapshot; atribuição; estados de fechamento/tarefa; prazos; fila do analista; comentários em texto; progresso; bloqueios e histórico operacional.
 
-**Dependências:** Fase 5; definição da chave de unicidade e fórmula de progresso.
+**Dependências:** Fase 6; definição da chave de unicidade e fórmula de progresso.
 
 **Riscos:** duplicação concorrente, desvio entre snapshot e modelo, transição inválida, progresso enganoso e tarefas atribuídas sem acesso.
 
@@ -120,13 +136,13 @@
 
 **Condição de conclusão:** uma equipe executa um fechamento completo sem evidências/revisão, e histórico reconstrói estados e atribuições.
 
-## Fase 7 — Evidências, anexos e pendências
+## Fase 8 — Evidências, anexos e pendências
 
 **Objetivo:** comprovar tarefas e administrar bloqueios de forma segura.
 
 **Funcionalidades/entregáveis:** fluxo de upload/finalização; metadados e checksum; scan/status; download autorizado; vínculo a tarefa; criação/atribuição/resolução/verificação de pendência; regra de bloqueio.
 
-**Dependências:** Fase 6; storage, scanner, limites, tipos e retenção definidos.
+**Dependências:** Fase 7; storage, scanner, limites, tipos e retenção definidos.
 
 **Riscos:** malware, bucket público, URL vazada, arquivo órfão, custo/DoS, pendência fechada indevidamente.
 
@@ -136,13 +152,13 @@
 
 **Condição de conclusão:** controles TM-05 e TM-15 foram verificados e a jornada de comprovação funciona em ambiente semelhante à produção.
 
-## Fase 8 — Revisão, aprovação e reabertura
+## Fase 9 — Revisão, aprovação e reabertura
 
 **Objetivo:** criar um gate formal de qualidade com ciclos imutáveis.
 
 **Funcionalidades/entregáveis:** submissão; inbox do revisor; aprovação; reprovação motivada; correção/reenvio; segregação conforme decisão; reabertura justificada; decisões e auditoria.
 
-**Dependências:** Fase 7; política de segregação e critérios de prontidão aprovados.
+**Dependências:** Fase 8; política de segregação e critérios de prontidão aprovados.
 
 **Riscos:** aprovação de versão antiga, self-approval indevido, corrida entre correção e decisão e adulteração de histórico.
 
@@ -152,13 +168,13 @@
 
 **Condição de conclusão:** revisor consegue justificar cada decisão e o sistema reconstrói todos os ciclos sem sobrescrita.
 
-## Fase 9 — Dashboard e governança operacional
+## Fase 10 — Dashboard e governança operacional
 
 **Objetivo:** permitir gestão por exceção sobre múltiplas empresas.
 
 **Funcionalidades/entregáveis:** indicadores de progresso; atrasos; pendências; fila de revisão; filtros por competência/empresa/responsável/estado; drill-down; histórico legível; consulta de auditoria para admin.
 
-**Dependências:** Fase 8; métricas e fórmulas validadas com pilotos.
+**Dependências:** Fase 9; métricas e fórmulas validadas com pilotos.
 
 **Riscos:** agregação cross-tenant, números sem explicação, consultas lentas, cardinalidade e exposição excessiva a convidado.
 
@@ -168,13 +184,13 @@
 
 **Condição de conclusão:** gestor identifica e navega até atrasos/bloqueios de uma competência com dados consistentes e tempo aceitável.
 
-## Fase 10 — Hardening, observabilidade e piloto controlado
+## Fase 11 — Hardening, observabilidade e piloto controlado
 
 **Objetivo:** preparar operação segura com dados reais e validar adoção.
 
 **Funcionalidades/entregáveis:** logs/métricas/traces; alertas; runbooks; dashboards operacionais; backup/restore; headers/rate limits; análise de dependências/imagens; política LGPD/retenção; suporte; feature flags necessárias; ambiente de staging e release controlado.
 
-**Dependências:** Fases 0–9; infraestrutura e responsáveis operacionais; contratos/suboperadores.
+**Dependências:** Fases 0–10; infraestrutura e responsáveis operacionais; contratos/suboperadores.
 
 **Riscos:** incidente sem detecção, restauração falha, custo, suporte invasivo, vulnerabilidade e critérios de sucesso vagos.
 
@@ -184,13 +200,13 @@
 
 **Condição de conclusão:** riscos altos estão mitigados ou formalmente aceitos, operação tem owner e um grupo limitado pode iniciar piloto com monitoramento.
 
-## Fase 11 — Aprendizado do piloto e decisão de expansão
+## Fase 12 — Aprendizado do piloto e decisão de expansão
 
 **Objetivo:** avaliar valor recorrente e priorizar somente necessidades comprovadas.
 
 **Funcionalidades/entregáveis:** instrumentação de métricas de produto com privacidade; entrevistas; análise de suporte; correções; decisão sobre notificações, importações, billing, MFA/SSO, filas e customizações.
 
-**Dependências:** piloto da Fase 10 por ao menos ciclos mensais suficientes para observar recorrência.
+**Dependências:** piloto da Fase 11 por ao menos ciclos mensais suficientes para observar recorrência.
 
 **Riscos:** confundir pedidos isolados com estratégia, medir atividade sem resultado e escalar antes de confiabilidade.
 
