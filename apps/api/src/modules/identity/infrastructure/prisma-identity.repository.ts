@@ -251,6 +251,18 @@ export class PrismaIdentityRepository implements IdentityRepository {
     return user === null ? null : mapPublicUser(user);
   }
 
+  public async findUsersByIds(
+    userIds: readonly string[],
+  ): Promise<StoredUser[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: [...userIds] } },
+    });
+    return users.map(mapPublicUser);
+  }
+
   public async listActiveSessions(
     userId: string,
     now: Date,

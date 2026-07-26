@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 import type { Environment } from '../../config/environment';
+import { BrowserMutationGuard } from '../../common/http/browser-mutation.guard';
+import { JsonBodyGuard } from '../../common/http/json-body.guard';
 import { DatabaseModule } from '../../shared/database/database.module';
 import { SessionPolicy } from './domain/session-policy';
 import {
@@ -12,6 +14,7 @@ import {
   SESSION_POLICY,
   SESSION_TOKEN_SERVICE,
 } from './application/identity.tokens';
+import { IdentityDirectory } from './application/identity-directory';
 import { AuthenticateSessionUseCase } from './application/use-cases/authenticate-session.use-case';
 import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.use-case';
 import { ListSessionsUseCase } from './application/use-cases/list-sessions.use-case';
@@ -24,8 +27,6 @@ import { CryptoSessionTokenService } from './infrastructure/crypto-session-token
 import { PrismaIdentityRepository } from './infrastructure/prisma-identity.repository';
 import { SystemClock } from './infrastructure/system-clock';
 import { AuthController } from './presentation/auth.controller';
-import { BrowserMutationGuard } from './presentation/browser-mutation.guard';
-import { JsonBodyGuard } from './presentation/json-body.guard';
 import { SessionAuthGuard } from './presentation/session-auth.guard';
 import { SessionCookieService } from './presentation/session-cookie.service';
 
@@ -71,6 +72,8 @@ import { SessionCookieService } from './presentation/session-cookie.service';
     SessionAuthGuard,
     SessionCookieService,
     ThrottlerGuard,
+    IdentityDirectory,
   ],
+  exports: [SessionAuthGuard, IdentityDirectory],
 })
 export class IdentityModule {}

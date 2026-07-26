@@ -18,8 +18,39 @@ model User {
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz(3)
   sessions        Session[]
+  memberships     Membership[]
 
   @@map("users")
+}
+
+model Organization {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @db.VarChar(120)
+  slug        String       @unique(map: "organizations_slug_key") @db.VarChar(63)
+  status      String       @default("ACTIVE") @db.VarChar(32)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  memberships Membership[]
+
+  @@map("organizations")
+}
+
+model Membership {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  role           String       @db.VarChar(32)
+  status         String       @default("ACTIVE") @db.VarChar(32)
+  joinedAt       DateTime     @default(now()) @map("joined_at") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, map: "memberships_organization_id_fkey")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict, map: "memberships_user_id_fkey")
+
+  @@unique([organizationId, userId], map: "memberships_organization_id_user_id_key")
+  @@index([userId, status, organizationId], map: "memberships_user_status_organization_idx")
+  @@index([organizationId, status, role, id], map: "memberships_organization_status_role_idx")
+  @@map("memberships")
 }
 
 model Session {

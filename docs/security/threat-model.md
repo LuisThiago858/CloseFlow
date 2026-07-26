@@ -26,7 +26,7 @@ Modelo inicial baseado em STRIDE para navegador, API, PostgreSQL, armazenamento 
 
 | ID    | Ameaça                                                        | Impacto    | Mitigações principais                                                                                                                      | Risco residual/validação             |
 | ----- | ------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
-| TM-01 | IDOR ou filtro ausente expõe outro tenant                     | Crítico    | TenantContext validado, filtros compostos, policies, constraints, testes A/B e possível RLS                                                | Alto até testes e spike de RLS       |
+| TM-01 | IDOR ou filtro ausente expõe outro tenant                     | Crítico    | Header validado contra sessão/membership, TenantContext, filtros compostos, 404 seguro, testes A/B e ADR sem RLS                           | Médio; repetir por nova feature      |
 | TM-02 | Escalada de papel/empresa por mass assignment                 | Crítico    | DTO allowlist, casos de uso específicos, negação padrão, auditoria e testes negativos                                                      | Médio                                |
 | TM-03 | Roubo/fixação de sessão                                       | Alto       | Token opaco novo, hash no banco, cookie HttpOnly/SameSite/Secure, expiração e revogação                                                    | Médio; TLS/MFA de produção pendentes |
 | TM-04 | Enumeração ou abuso de login/convite/reset                    | Alto       | Resposta uniforme no login, Argon2 dummy, rate limit por IP e logs redigidos                                                               | Médio; limite distribuído pendente   |
@@ -36,7 +36,7 @@ Modelo inicial baseado em STRIDE para navegador, API, PostgreSQL, armazenamento 
 | TM-08 | Injeção SQL/command/SSRF                                      | Alto       | Prisma parametrizado, validação, allowlists, sem shell/URL arbitrária                                                                      | Baixo/médio                          |
 | TM-09 | Aprovação ou auditoria adulterada                             | Alto       | Eventos append-only, transação, autorização, relógio confiável, backup e acesso restrito                                                   | Médio; retenção pendente             |
 | TM-10 | Condição de corrida duplica fechamento ou sobrescreve revisão | Médio/alto | Unique constraint, idempotência, estado/versionamento otimista e transações                                                                | Baixo após integração                |
-| TM-11 | Vazamento por cache, dashboard, busca ou logs                 | Crítico    | Namespace tenant, query keys, filtros, redaction e testes de agregação                                                                     | Médio                                |
+| TM-11 | Vazamento por cache, dashboard, busca ou logs                 | Crítico    | Query keys por UUID, cancelamento/limpeza seletiva, preservação de caches globais, redaction e testes                                      | Médio; dashboards ainda pendentes    |
 | TM-12 | Comprometimento de dependência/CI                             | Alto       | Lockfile, scans, Actions fixadas, permissões mínimas e revisão                                                                             | Médio                                |
 | TM-13 | Operador interno acessa dados indevidamente                   | Alto       | Least privilege, acesso just-in-time futuro, logs administrativos e sem bypass implícito                                                   | Médio/alto; processo pendente        |
 | TM-14 | Perda/ransomware e backup inválido                            | Alto       | Backups isolados/criptografados, retenção e restauração testada                                                                            | Médio                                |
@@ -66,10 +66,16 @@ Arquivo tem extensão permitida e conteúdo ativo; ou URL é compartilhada. Vali
 
 Usuário alterna de A para B e vê resposta de A por query key genérica. Keys tenant-aware, cancelamento, limpeza e teste e2e são obrigatórios.
 
+### Membership removido é recriado
+
+Uma implementação futura tenta inserir novo vínculo para usuário anteriormente removido, contornando histórico ou falhando de modo informativo. A unique permanente exige reativação atômica do registro existente; a Fase 4 não expõe endpoint de readmissão.
+
 ## Requisitos de teste derivados
 
 - Matriz de autorização por endpoint e estado, incluindo acessos negativos.
 - Suite de isolamento A/B para CRUD, agregações, busca, anexos e jobs.
+- Ausência de `X-Organization-Id` em 400, UUID/payload inválido em 422 e referências cross-tenant em 404 indistinguível.
+- Troca de tenant preserva `['auth', 'me']` e `['organizations']`, removendo apenas o namespace anterior.
 - Testes de concorrência para criação e transições.
 - Testes de token expirado/reutilizado, revogação e rate limiting.
 - Arquivos com extensão/MIME divergente, tamanho excedido e estado não liberado.

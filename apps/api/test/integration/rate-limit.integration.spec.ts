@@ -22,8 +22,12 @@ describe('rate limiting de autenticação', () => {
     configureApplication(app);
     await app.init();
     const prisma = app.get(PrismaService);
-    await prisma.session.deleteMany();
-    await prisma.user.deleteMany();
+    await prisma.$transaction([
+      prisma.membership.deleteMany(),
+      prisma.organization.deleteMany(),
+      prisma.session.deleteMany(),
+      prisma.user.deleteMany(),
+    ]);
   });
 
   afterAll(async () => {

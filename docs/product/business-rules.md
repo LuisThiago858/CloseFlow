@@ -17,8 +17,13 @@ As regras usam identificadores estáveis para facilitar rastreamento em históri
 - **BR-ORG-002:** o acesso exige usuário ativo, associação ativa e autorização compatível na organização ativa.
 - **BR-ORG-003:** identificadores de organização recebidos do cliente são apenas referências a validar; nunca definem por si sós o tenant efetivo.
 - **BR-ORG-004:** um usuário pode pertencer a várias organizações, mas cada requisição opera em um único contexto de organização.
-- **BR-ORG-005:** deve existir ao menos um administrador ativo por organização; o último não pode remover a própria função sem sucessor.
-- **BR-ORG-006:** revogar uma associação invalida seu acesso e sessões/contextos daquela organização conforme a estratégia de sessão.
+- **BR-ORG-005:** toda organização nasce `ACTIVE` com ao menos um membership `ACTIVE/OWNER`; não existe alteração pública de status nesta fase.
+- **BR-ORG-006:** remover ou deixar uma organização desativa o membership sem apagar seu histórico e invalida apenas o acesso ao tenant, não a sessão global.
+- **BR-ORG-007:** membership é único permanentemente por organização e usuário; retorno futuro reativa o mesmo registro em vez de criar outro.
+- **BR-ORG-008:** remover `MEMBER` é idempotente: vínculo ativo vira `INACTIVE` e repetição sobre o mesmo vínculo inativo retorna sucesso sem nova escrita.
+- **BR-ORG-009:** `OWNER` não pode ser removido, deixar a organização nem ter papel alterado nesta fase; transferência e promoção ficam adiadas.
+- **BR-ORG-010:** slug é global, imutável e único; conflitos não recebem sufixo automático.
+- **BR-ORG-011:** rotas tenant-scoped exigem `X-Organization-Id`; ausência produz 400, enquanto UUID, parâmetro ou payload inválido produz 422.
 
 ## Empresas gerenciadas
 

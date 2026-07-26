@@ -55,6 +55,8 @@ describe('Persistência e health da API', () => {
 
     expect(tables.map(({ table_name }) => table_name)).toEqual([
       '_prisma_migrations',
+      'memberships',
+      'organizations',
       'sessions',
       'users',
     ]);
@@ -63,6 +65,9 @@ describe('Persistência e health da API', () => {
     );
     expect(migrations.map(({ migration_name }) => migration_name)).toContain(
       '20260717090000_add_identity_and_sessions',
+    );
+    expect(migrations.map(({ migration_name }) => migration_name)).toContain(
+      '20260722090000_add_organizations_and_memberships',
     );
   });
 

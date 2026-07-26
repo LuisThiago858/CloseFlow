@@ -23,6 +23,10 @@ export class ApiProblem extends Error {
   }
 }
 
+export interface ApiRequestOptions extends RequestInit {
+  organizationId?: string;
+}
+
 function getApiBaseUrl(): string {
   return import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 }
@@ -52,17 +56,21 @@ async function parseProblem(response: Response): Promise<ApiProblem> {
 export async function apiRequest<T>(
   path: string,
   schema: z.ZodType<T>,
-  init?: RequestInit,
+  init?: ApiRequestOptions,
 ): Promise<T> {
+  const { organizationId, ...requestInit } = init ?? {};
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
+    ...requestInit,
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      ...(init?.body === undefined
+      ...(requestInit.body === undefined
         ? {}
         : { 'Content-Type': 'application/json' }),
-      ...init?.headers,
+      ...(organizationId === undefined
+        ? {}
+        : { 'X-Organization-Id': organizationId }),
+      ...requestInit.headers,
     },
   });
 
@@ -80,14 +88,18 @@ export async function apiRequest<T>(
 
 export async function apiRequestWithoutResponse(
   path: string,
-  init: RequestInit,
+  init: ApiRequestOptions,
 ): Promise<void> {
+  const { organizationId, ...requestInit } = init;
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
+    ...requestInit,
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      ...init.headers,
+      ...(organizationId === undefined
+        ? {}
+        : { 'X-Organization-Id': organizationId }),
+      ...requestInit.headers,
     },
   });
   if (!response.ok) {

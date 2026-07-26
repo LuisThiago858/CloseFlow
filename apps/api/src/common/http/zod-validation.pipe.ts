@@ -1,7 +1,7 @@
 import type { PipeTransform } from '@nestjs/common';
 import type { ZodType } from 'zod';
 
-import { ApplicationError } from '../../../common/errors/application-error';
+import { ApplicationError } from '../errors/application-error';
 
 export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
   public constructor(

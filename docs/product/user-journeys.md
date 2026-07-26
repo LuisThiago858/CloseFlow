@@ -9,14 +9,24 @@
 
 **Exceções:** e-mail duplicado no cadastro, credenciais inválidas com mensagem uniforme, rate limit, sessão ausente, expirada, revogada ou usuário desabilitado.
 
-**Limites atuais:** recuperação, confirmação de e-mail, MFA, organização e papéis pertencem a fases futuras.
+**Limites atuais:** recuperação, confirmação de e-mail e MFA pertencem a fases futuras. Organização e papéis iniciais são entregues na Fase 4.
+
+## Onboarding e troca de organização
+
+1. Após cadastro ou login, o usuário consulta suas organizações ativas.
+2. Sem organização, ele é direcionado ao onboarding e cria uma organização `ACTIVE`, tornando-se `OWNER`.
+3. Com mais de uma organização, escolhe o contexto no seletor; somente o UUID selecionado é persistido localmente.
+4. A API revalida sessão, organização e membership ativo em toda rota tenant-scoped.
+5. A troca cancela e remove somente caches do tenant anterior, preservando dados globais de sessão e lista de organizações.
+
+**Exceções:** slug em conflito, organização inativa, membership inativo, contexto ausente ou inválido e identificador pertencente a outro tenant.
 
 ## 1. Configurar organização e equipe
 
 1. O administrador entra em uma organização válida.
 2. Configura nome, fuso horário e preferências operacionais.
 3. Convida membros informando e-mail e papel.
-4. O convidado aceita um convite válido e passa a integrar a organização.
+4. Convites e reativação de memberships serão implementados na Fase 4.1.
 5. O administrador pode alterar papel ou revogar acesso.
 
 **Exceções:** convite expirado, e-mail divergente, membro já ativo, último administrador e tentativa de escalada de privilégio.

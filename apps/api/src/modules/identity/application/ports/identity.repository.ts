@@ -70,6 +70,7 @@ export interface IdentityRepository {
     reason: SessionRevocationReason,
   ): Promise<void>;
   findUserById(userId: string): Promise<StoredUser | null>;
+  findUsersByIds(userIds: readonly string[]): Promise<StoredUser[]>;
   listActiveSessions(
     userId: string,
     now: Date,

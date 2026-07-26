@@ -42,6 +42,42 @@ function getAuthenticationAction(
   return actions[routeKey];
 }
 
+function getOrganizationAction(
+  method: string,
+  path: string,
+): string | undefined {
+  if (!path.startsWith('/api/v1/organizations')) {
+    return undefined;
+  }
+  const normalizedMethod = method.toUpperCase();
+  if (path === '/api/v1/organizations') {
+    return normalizedMethod === 'POST'
+      ? 'organization.create'
+      : normalizedMethod === 'GET'
+        ? 'organization.list'
+        : undefined;
+  }
+  if (/^\/api\/v1\/organizations\/[^/]+\/members\/[^/]+$/u.test(path)) {
+    return normalizedMethod === 'DELETE'
+      ? 'organization.member.remove'
+      : undefined;
+  }
+  if (/^\/api\/v1\/organizations\/[^/]+\/members$/u.test(path)) {
+    return normalizedMethod === 'GET' ? 'organization.member.list' : undefined;
+  }
+  if (/^\/api\/v1\/organizations\/[^/]+\/leave$/u.test(path)) {
+    return normalizedMethod === 'POST' ? 'organization.leave' : undefined;
+  }
+  if (/^\/api\/v1\/organizations\/[^/]+$/u.test(path)) {
+    return normalizedMethod === 'PATCH'
+      ? 'organization.update'
+      : normalizedMethod === 'GET'
+        ? 'organization.get'
+        : undefined;
+  }
+  return undefined;
+}
+
 const statusTitles: Readonly<Record<number, string>> = {
   [HttpStatus.BAD_REQUEST]: 'Requisição inválida',
   [HttpStatus.UNAUTHORIZED]: 'Autenticação necessária',
@@ -57,6 +93,7 @@ const statusTitles: Readonly<Record<number, string>> = {
 const applicationErrorStatuses: Readonly<
   Record<ApplicationErrorKind, HttpStatus>
 > = {
+  bad_request: HttpStatus.BAD_REQUEST,
   conflict: HttpStatus.CONFLICT,
   forbidden: HttpStatus.FORBIDDEN,
   not_found: HttpStatus.NOT_FOUND,
@@ -199,6 +236,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           correlationId,
         },
         'Operação de autenticação recusada.',
+      );
+    }
+
+    const organizationAction = getOrganizationAction(
+      request.method,
+      request.path,
+    );
+    if (organizationAction !== undefined) {
+      this.logger.warn(
+        {
+          action: organizationAction,
+          result: 'failure',
+          code,
+          status,
+          correlationId,
+        },
+        'Operação de organização recusada.',
       );
     }
 
