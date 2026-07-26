@@ -76,17 +76,33 @@
 
 **Objetivo:** estabelecer o contexto de organização e autorização tenant-aware sobre a identidade global já autenticada.
 
-**Funcionalidades/entregáveis:** Organization, Membership e Invitation; seleção de organização; papéis predefinidos; guards/policies; TenantContext; repositórios tenant-aware; revogação organizacional; auditoria de acessos administrativos.
+**Funcionalidades/entregáveis:** Organization `ACTIVE`; Membership histórico `OWNER`/`MEMBER`; onboarding; criação e seleção de organização; `TenantContext` por header validado; repositório tenant-aware; listagem de membros; edição de nome por owner; saída de member e offboarding lógico idempotente.
 
-**Dependências:** Fase 3; provedor de e-mail para convites; matriz RBAC; decisão RLS.
+**Dependências:** Fase 3; convenções de persistência do ADR-005; sessões opacas do ADR-006.
 
-**Riscos:** escalada de papel, convite reutilizado, bypass de tenant, último administrador removido e cache contaminado entre organizações.
+**Riscos:** escalada de papel, bypass de tenant, owner removido, detalhe de constraint exposto, histórico de membership perdido e cache contaminado entre organizações.
 
-**Critérios de aceitação:** usuário alterna apenas entre organizações das quais participa; convite expira e é uso único; último admin é protegido; operações cross-tenant são negadas sem vazamento.
+**Critérios de aceitação:** usuário alterna apenas entre organizações ativas das quais participa; header ausente/ inválido tem semântica 400/422; IDs externos recebem 404 seguro; owner é protegido; remoção preserva vínculo `INACTIVE`; caches globais sobrevivem à troca.
 
-**Testes necessários:** unitários de policies; integração de memberships/convites; E2E de convite, revogação e troca; matriz A/B; auditoria e cache tenant-aware.
+**Testes necessários:** unitários de domínio, casos de uso e cache; integração PostgreSQL de migration, trigger, concorrência, memberships e matriz A/B; contrato OpenAPI; E2E de onboarding, criação, reload e troca de organização.
 
-**Condição de conclusão:** threat cases TM-01/TM-02 passam e auditoria permite reconstruir mudanças de acesso sem antecipar empresas gerenciadas.
+**Condição de conclusão:** gates locais/CI passam, TM-01/TM-02 possuem regressão automatizada e nenhum convite, RBAC completo, RLS, empresa ou recurso financeiro foi antecipado.
+
+## Fase 4.1 — Convites e reativação de memberships
+
+**Objetivo:** permitir entrada e retorno controlado de membros sem quebrar o histórico estabelecido na Fase 4.
+
+**Funcionalidades/entregáveis:** convite com token opaco e expiração; aceite pelo destinatário esperado; revogação; reativação transacional do membership `INACTIVE`; definição explícita de promoção, transferência e remoção de owner; auditoria persistente de acesso.
+
+**Dependências:** Fase 4; provedor de e-mail; política de convite e matriz de papéis aprovadas; módulo Audit mínimo.
+
+**Riscos:** convite enumerável/reutilizado, takeover por e-mail divergente, inserção de segundo membership, remoção do último owner e corrida entre aceite/revogação.
+
+**Critérios de aceitação:** token é armazenado somente como hash, uso é único e expirável; retorno reutiliza `(organization_id, user_id)` existente; owner ativo permanece garantido; respostas não enumeram organização ou e-mail.
+
+**Testes necessários:** unitários de token/policies; integração de aceite, expiração, revogação, reativação e concorrência; E2E de convite; matriz A/B; auditoria e redaction.
+
+**Condição de conclusão:** convite e readmissão funcionam sem criar membership duplicado, sem reduzir isolamento e com trilha auditável.
 
 ## Fase 5 — Empresas e escopo do cliente convidado
 

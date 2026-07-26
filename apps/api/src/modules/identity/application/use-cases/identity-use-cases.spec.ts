@@ -142,6 +142,12 @@ class FakeIdentityRepository implements IdentityRepository {
     return Promise.resolve(this.existingUser);
   }
 
+  public async findUsersByIds(): Promise<StoredUser[]> {
+    return Promise.resolve(
+      this.existingUser === null ? [] : [this.existingUser],
+    );
+  }
+
   public async listActiveSessions(): Promise<StoredSession[]> {
     return Promise.resolve(this.sessions);
   }

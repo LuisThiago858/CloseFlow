@@ -4,18 +4,19 @@ CloseFlow é uma plataforma SaaS B2B de controle operacional e governança do fe
 
 ## Estado do projeto
 
-O repositório contém a fundação técnica, persistência e autenticação local da Fase 3, ainda sem funcionalidades financeiras:
+O repositório contém a fundação técnica, autenticação local e contexto organizacional da Fase 4, ainda sem funcionalidades financeiras:
 
 - monorepo com pnpm workspaces;
 - frontend React/Vite com Router, TanStack Query, Tailwind e testes;
 - API NestJS com liveness/readiness, ambiente validado, logs estruturados, Problem Details e OpenAPI;
-- Prisma 7 com adapter PostgreSQL, módulo central de banco e migrations de `users`/`sessions`;
+- Prisma 7 com adapter PostgreSQL e migrations de `users`, `sessions`, `organizations` e `memberships`;
 - cadastro, login, logout, `/auth/me`, listagem/revogação de sessões, Argon2id e cookies seguros;
-- frontend mínimo de cadastro/login e rota protegida, sem armazenar tokens no JavaScript;
+- organizações ativas, memberships históricos, papéis `OWNER`/`MEMBER` e `TenantContext` validado por `X-Organization-Id`;
+- onboarding, criação e troca de organização, configurações e lista de membros sem armazenar tokens no JavaScript;
 - PostgreSQL persistente para desenvolvimento e instância efêmera isolada para integração;
 - lint, formatação, typecheck, testes unitários/integração/E2E, build e CI com PostgreSQL real e Chromium.
 
-Organizações, memberships, papéis, recuperação de senha, MFA, models financeiros, Redis, filas, uploads e integrações ainda não foram implementados.
+Convites, reativação de memberships, RBAC completo, recuperação de senha, MFA, models financeiros, Redis, filas, uploads e integrações ainda não foram implementados.
 
 ## Requisitos locais
 
@@ -76,7 +77,7 @@ docker compose version
    pnpm db:migrate:status
    ```
 
-   A baseline permanece vazia; a migration seguinte cria somente `users`, `sessions`, índices e constraints da autenticação.
+   As migrations criam identidade, sessões, organizações e memberships. A migration da Fase 4 também instala a constraint trigger diferida que protege as invariantes de owner e organização inativa.
 
 ## Executar as aplicações
 
@@ -103,7 +104,9 @@ Endereços locais:
 - OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 - Cadastro: [http://localhost:5173/register](http://localhost:5173/register)
 - Login: [http://localhost:5173/login](http://localhost:5173/login)
-- Rota protegida temporária: [http://localhost:5173/app](http://localhost:5173/app)
+- Aplicação e seletor de organização: [http://localhost:5173/app](http://localhost:5173/app)
+- Onboarding: [http://localhost:5173/app/onboarding](http://localhost:5173/app/onboarding)
+- Configurações da organização: [http://localhost:5173/app/settings/organization](http://localhost:5173/app/settings/organization)
 
 O frontend usa o proxy do Vite para acessar `/api` com cookies. Em desenvolvimento o cookie não usa `Secure`; em produção esse atributo é obrigatório. `/health/live` verifica somente o processo; `/health` e `/health/ready` consultam o PostgreSQL e retornam `503` seguro quando ele estiver indisponível.
 
@@ -117,6 +120,7 @@ O frontend usa o proxy do Vite para acessar `/api` com cookies. Em desenvolvimen
 | `pnpm typecheck`             | Verifica TypeScript estrito                                   |
 | `pnpm test`                  | Executa testes unitários                                      |
 | `pnpm test:integration`      | Executa integração da API contra `DATABASE_URL_TEST`          |
+| `pnpm test:openapi`          | Valida o documento OpenAPI publicado pela API                 |
 | `pnpm test:e2e`              | Executa os fluxos web reais com API, preview e Chromium       |
 | `pnpm test:e2e:install`      | Instala o Chromium gerenciado pelo Playwright                 |
 | `pnpm build`                 | Gera builds de API e web                                      |
@@ -245,6 +249,7 @@ apps/
     src/config/         # validação central do ambiente
     src/modules/health/ # liveness e readiness da API
     src/modules/identity/ # domínio, casos de uso, Prisma e HTTP de autenticação
+    src/modules/organizations/ # tenant context, organizações e memberships
     src/shared/database/ # PrismaService central e lifecycle
     prisma/             # schema, migrations de identidade e seed vazio
   web/                  # aplicação React/Vite
@@ -264,9 +269,9 @@ O workflow `.github/workflows/ci.yml` provisiona PostgreSQL 17 exclusivo do job,
 1. geração e validação do Prisma Client/schema;
 2. `migrate deploy` e `migrate status`;
 3. formatação, lint e typecheck;
-4. testes unitários e de integração;
+4. testes unitários, de integração e contrato OpenAPI;
 5. build;
-6. Playwright/Chromium com os fluxos essenciais de autenticação.
+6. Playwright/Chromium com autenticação, onboarding e troca de organização.
 
 Não há etapa de deploy.
 
@@ -338,6 +343,8 @@ pnpm test:e2e
 
 O Playwright usa a API na porta 3100 para não conflitar com o desenvolvimento em 3000. Se uma execução for interrompida, confirme e encerre somente os processos temporários `node dist/main.js` ou `vite preview` antes de repetir.
 
+Em ambientes Windows que não encerram processos filhos do `webServer`, inicie manualmente a API compilada na porta 3100 e o preview na 4173 e execute com `PLAYWRIGHT_REUSE_SERVERS=true`. Essa flag apenas reutiliza servidores já saudáveis; o CI continua provisionando os próprios processos.
+
 ### Cookie não é enviado ou a origem é recusada
 
 Use o frontend pelo endereço listado em `CORS_ALLOWED_ORIGINS` e mantenha `credentials: include`. Não use `*` com cookies. Após alterar origem ou `API_PORT`, reinicie API e Vite. Em produção, HTTPS é obrigatório porque o cookie sempre usa `Secure`.
@@ -361,6 +368,14 @@ Não apague o lockfile. Execute novamente `pnpm install --frozen-lockfile`; se n
 ### Docker exibe aviso de acesso ao `config.json`
 
 Verifique as permissões de `%USERPROFILE%\.docker\config.json` e se o Docker Desktop está usando o mesmo usuário do terminal. O aviso pode impedir acesso ao daemon ou a registries.
+
+### API retorna `ORGANIZATION_CONTEXT_REQUIRED`
+
+Rotas tenant-scoped exigem `X-Organization-Id` com o mesmo UUID presente na rota. O header seleciona uma referência, mas o backend só aceita o contexto quando a organização e o membership do usuário estão ativos. Header ausente retorna 400; UUID, parâmetro ou payload inválido retorna 422.
+
+### Organização anterior aparece após a troca
+
+Não altere manualmente o cache. A aplicação persiste somente o UUID selecionado em `localStorage`, cancela requisições do tenant anterior e remove apenas queries iniciadas por `['organization', organizationId]`. Queries globais como `['auth', 'me']` e `['organizations']` são preservadas.
 
 ## Mapa da documentação
 

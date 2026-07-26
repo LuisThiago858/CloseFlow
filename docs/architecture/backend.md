@@ -104,7 +104,10 @@ Envelope baseline inspirado em Problem Details:
 - A validade deslizante é de sete dias, renovada nas últimas 24 horas, limitada a 30 dias absolutos; `last_used_at` é atualizado no máximo a cada 15 minutos.
 - Cadastro e login usam rate limit em memória por IP/endpoint. Mais de uma instância exigirá armazenamento distribuído e revisão do proxy confiável.
 - CORS aceita somente `CORS_ALLOWED_ORIGINS`; mutações validam origem/Fetch Metadata e corpos de credencial exigem JSON.
-- Guards autenticam; a futura Fase 4 adicionará contexto de tenant, associação e policies de organização.
+- `Organizations` importa a API pública estreita de `Identity`, resolve `TenantContext` por sessão, header, organização ativa e membership ativo e nunca consulta internals de identidade de forma ad hoc.
+- `X-Organization-Id` é somente referência: `TenantContextGuard` combina `userId` autenticado e organização antes de disponibilizar `organizationId`, `membershipId` e papel tipados.
+- Casos de uso aplicam autorização `OWNER`/`MEMBER` e invariantes previsíveis; o repositório Prisma específico mantém filtros compostos e traduz conflitos residuais em erros sanitizados.
+- A constraint trigger diferida é a última linha de defesa para owner ativo e organização inativa, não substituto da validação de aplicação.
 - RBAC é baseline, complementado por escopo de empresa e estado do recurso.
 - Eventos atuais são logs estruturados redigidos. Auditoria persistente de papel, convite, aprovação e reabertura será adicionada no módulo Audit.
 

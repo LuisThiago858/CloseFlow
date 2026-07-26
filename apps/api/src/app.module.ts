@@ -12,6 +12,7 @@ import { validateEnvironment } from './config/environment';
 import type { Environment } from './config/environment';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { IdentityModule } from './modules/identity/identity.module';
     }),
     HealthModule,
     IdentityModule,
+    OrganizationsModule,
   ],
   providers: [
     {

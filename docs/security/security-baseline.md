@@ -23,7 +23,10 @@ Esta baseline é requisito mínimo do MVP e deve ser transformada em controles v
 
 - Negação por padrão; autenticação, associação, papel, escopo de empresa e estado são verificados no backend.
 - Organização ativa é resolvida e validada no servidor a cada contexto de sessão/requisição.
+- `X-Organization-Id` nunca concede acesso: sessão, organização e membership ativo são combinados no `TenantContextGuard`; referências externas recebem 404 seguro.
 - Repositórios tenant-aware e constraints compostas reduzem risco de IDOR e vínculo cruzado.
+- Membership removido permanece `INACTIVE`, evitando perda de trilha histórica; owner não pode ser removido nem deixar a organização nesta fase.
+- A aplicação valida invariantes antes da escrita e converte violações residuais do banco em Problem Details genérico, sem constraint ou SQL.
 - Operações administrativas e exports exigem permissão específica e auditoria.
 - Testes negativos entre dois tenants são obrigatórios para toda feature tenant-owned.
 - Contas internas de suporte não recebem bypass implícito; impersonation futura exige consentimento/política, tempo limitado e auditoria destacada.
@@ -63,7 +66,7 @@ Esta baseline é requisito mínimo do MVP e deve ser transformada em controles v
 - Erros de conexão e health checks não registram URL, senha, SQL ou stack; apenas ação e resultado operacional seguros.
 - Banco não exposto publicamente; redes e firewall com allowlist mínima.
 - Migrations revisadas, backups antes de mudanças arriscadas e estratégia expand/contract.
-- RLS, se adotado, deve forçar policies inclusive para owner adequado e falhar sem tenant context.
+- RLS não está ativo na Fase 4; sua adoção futura exige ADR substituto, usuário de banco sem bypass e testes de contexto/pooling.
 - Ambientes têm logs de acesso administrativo e rotação de chaves.
 - Imagens de container mínimas, não-root quando viável, fixadas e analisadas.
 

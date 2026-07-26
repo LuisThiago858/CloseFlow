@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiProblem } from '../../api/http-client';
-import { authQueryKey, currentUserQueryOptions } from './auth-query';
+import { currentUserQueryOptions } from './auth-query';
 import { logoutUser } from './api/auth-api';
 import { FormError } from './form-error';
+import { clearStoredOrganizationId } from '../organizations/organization-selection';
 
 export function ProtectedPage() {
   const navigate = useNavigate();
@@ -13,7 +14,8 @@ export function ProtectedPage() {
   const logoutMutation = useMutation({
     mutationFn: logoutUser,
     onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: authQueryKey });
+      clearStoredOrganizationId();
+      queryClient.clear();
       await navigate('/login', { replace: true });
     },
   });

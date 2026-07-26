@@ -32,6 +32,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 
+import { BrowserMutationGuard } from '../../../common/http/browser-mutation.guard';
+import { JsonBodyGuard } from '../../../common/http/json-body.guard';
+import { ProblemDetailsDto } from '../../../common/http/problem-details.dto';
+import { ZodValidationPipe } from '../../../common/http/zod-validation.pipe';
 import type {
   AuthenticatedPrincipal,
   PublicSession,
@@ -45,7 +49,6 @@ import { RegisterUserUseCase } from '../application/use-cases/register-user.use-
 import { RevokeSessionUseCase } from '../application/use-cases/revoke-session.use-case';
 import {
   LoginRequestDto,
-  ProblemDetailsDto,
   RegisterRequestDto,
   SessionsResponseDto,
   UserResponseDto,
@@ -58,11 +61,8 @@ import {
   sessionIdSchema,
 } from './auth.schemas';
 import { CurrentPrincipal } from './authenticated-principal';
-import { BrowserMutationGuard } from './browser-mutation.guard';
-import { JsonBodyGuard } from './json-body.guard';
 import { SessionAuthGuard } from './session-auth.guard';
 import { SessionCookieService } from './session-cookie.service';
-import { ZodValidationPipe } from './zod-validation.pipe';
 
 interface UserResponse {
   user: PublicUser;

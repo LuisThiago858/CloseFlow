@@ -26,15 +26,17 @@ Sessão global já implementada: UUID, usuário, SHA-256 do token opaco, criaç�
 
 ### Organization
 
-Tenant: `id`, nome, slug/referência, fuso horário, estado e configurações versionadas essenciais.
+Tenant implementado: UUID, nome normalizado, slug global único e imutável, estado `ACTIVE`/`INACTIVE` e timestamps. Toda organização nasce `ACTIVE`; não existe endpoint de mudança de status nesta fase.
 
 ### Membership
 
-Relaciona usuário e organização: papel predefinido, estado, datas de ingresso/revogação. Único por `(organization_id, user_id)` para vínculo vigente, conforme estratégia histórica.
+Relação histórica implementada entre usuário e organização: UUID, papel `OWNER`/`MEMBER`, estado `ACTIVE`/`INACTIVE`, ingresso e timestamps. A unicidade por `(organization_id, user_id)` é permanente; remoção nunca apaga o registro e retorno futuro deve reativá-lo.
+
+Uma constraint trigger diferida exige owner ativo ao final de transações de organização `ACTIVE` e proíbe membership ativo em organização `INACTIVE`. Os casos de uso validam as invariantes previsíveis antes de chegar a essa última defesa.
 
 ### Invitation
 
-Organização, e-mail normalizado, papel proposto, token armazenado como hash, expiração, autor, aceite/revogação. Token nunca é salvo em texto puro.
+Planejado para a Fase 4.1: organização, e-mail normalizado, papel proposto, token armazenado como hash, expiração, autor, aceite/revogação. Nenhuma tabela ou endpoint de convite existe na Fase 4.
 
 ### CompanyAccess
 

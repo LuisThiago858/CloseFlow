@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const testDatabaseUrl =
   process.env.DATABASE_URL_TEST ??
   'postgresql://closeflow_test:change-me-test-only@localhost:5433/closeflow_test?schema=public';
+const reuseExistingServers = process.env.PLAYWRIGHT_REUSE_SERVERS === 'true';
 
 export default defineConfig({
   testDir: './apps/web/e2e',
@@ -24,9 +25,10 @@ export default defineConfig({
   webServer: [
     {
       name: 'API',
-      command: 'pnpm --filter @closeflow/api start:prod',
+      command: 'node dist/main.js',
+      cwd: './apps/api',
       port: 3100,
-      reuseExistingServer: false,
+      reuseExistingServer: reuseExistingServers,
       timeout: 120_000,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -42,9 +44,10 @@ export default defineConfig({
     },
     {
       name: 'Web',
-      command: 'pnpm --filter @closeflow/web preview',
+      command: 'node node_modules/vite/bin/vite.js preview',
+      cwd: './apps/web',
       port: 4173,
-      reuseExistingServer: false,
+      reuseExistingServer: reuseExistingServers,
       timeout: 120_000,
       stdout: 'pipe',
       stderr: 'pipe',

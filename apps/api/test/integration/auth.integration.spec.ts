@@ -84,8 +84,12 @@ describe('autenticação e sessões com PostgreSQL real', () => {
     logger.error.mockClear();
     logger.info.mockClear();
     logger.warn.mockClear();
-    await prisma.session.deleteMany();
-    await prisma.user.deleteMany();
+    await prisma.$transaction([
+      prisma.membership.deleteMany(),
+      prisma.organization.deleteMany(),
+      prisma.session.deleteMany(),
+      prisma.user.deleteMany(),
+    ]);
   });
 
   afterAll(async () => {
@@ -132,8 +136,12 @@ describe('autenticação e sessões com PostgreSQL real', () => {
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toMatchObject({ code: 'EMAIL_ALREADY_REGISTERED' });
 
-    await prisma.session.deleteMany();
-    await prisma.user.deleteMany();
+    await prisma.$transaction([
+      prisma.membership.deleteMany(),
+      prisma.organization.deleteMany(),
+      prisma.session.deleteMany(),
+      prisma.user.deleteMany(),
+    ]);
     const concurrentEmail = uniqueEmail('concurrent');
     const responses = await Promise.all([
       register(request.agent(app.getHttpServer()), concurrentEmail),

@@ -9,17 +9,19 @@ O isolamento não depende de uma única barreira. Aplicação, repositórios, co
 ## Contexto de organização
 
 1. A identidade autenticada fornece `userId` confiável.
-2. A rota, subdomínio ou seletor envia uma referência de organização.
-3. O backend consulta associação ativa e resolve `TenantContext` imutável com `organizationId`, `membershipId`, papel e escopos.
+2. As rotas tenant-scoped recebem `X-Organization-Id` e o mesmo UUID no parâmetro de rota; ausência do header retorna 400 e referência inválida retorna 422.
+3. O backend combina a identidade autenticada, organização `ACTIVE` e membership `ACTIVE`, resolvendo `TenantContext` imutável com `organizationId`, `membershipId` e papel.
 4. Guards/policies usam esse contexto.
 5. Repositórios recebem contexto explicitamente e aplicam `organizationId` em todas as operações.
 
-Um `organizationId` no body não substitui o contexto. Quando o contrato aceitar esse campo por necessidade, ele deve coincidir com o contexto validado ou ser ignorado/rejeitado.
+Um `organizationId` no body não substitui o contexto e é rejeitado nos contratos atuais. Identificador de outro tenant ou contexto divergente recebe 404 seguro.
+
+Na Fase 4, `Organization` é o tenant raiz. `Membership` preserva histórico: remoção altera seu status para `INACTIVE`, e a unicidade permanente por `(organization_id, user_id)` obriga uma futura readmissão a reativar o registro existente.
 
 ## Classificação das tabelas
 
 - **Globais:** usuário/identidade, catálogos técnicos estritamente globais.
-- **De associação:** membership e convite, sempre relacionados a uma organização.
+- **De associação:** membership. Convites serão adicionados somente na Fase 4.1.
 - **Tenant-owned:** empresas, modelos, fechamentos, tarefas, comentários, evidências, pendências, revisões e auditoria.
 
 Recursos filhos podem herdar tenant pelo pai, mas é preferível repetir `organization_id` quando isso habilita constraints compostas, índices e filtros seguros. A redundância deve ser protegida por chaves compostas para evitar inconsistência.
@@ -62,7 +64,11 @@ Cliente convidado recebe escopo allowlist por empresa; ausência de vínculo sig
 - Convites, anexos, URLs assinadas, comentários e auditoria respeitam tenant.
 - Jobs e comandos repetidos não operam no contexto errado.
 
-## Avaliação de RLS
+## Decisão sobre RLS
+
+A Fase 4 não usa RLS. O isolamento atual depende de contexto validado, predicados compostos, respostas 404 seguras, cache namespaced e testes A/B. A decisão e os controles compensatórios estão no ADR-011; uma nova adoção exige ADR substituto e prova com Prisma/pooling.
+
+## Avaliação futura de RLS
 
 Antes do lançamento, executar spike com:
 

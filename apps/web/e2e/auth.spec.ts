@@ -6,22 +6,53 @@ function uniqueEmail(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}@example.com`;
 }
 
-test('cadastro persiste após reload e logout encerra a sessão', async ({
+test('cadastro cria organizações, troca tenant e logout encerra a sessão', async ({
   page,
 }) => {
   const email = uniqueEmail('e2e-register');
+  const firstOrganization = `Organização A ${crypto.randomUUID().slice(0, 6)}`;
+  const secondOrganization = `Organização B ${crypto.randomUUID().slice(0, 6)}`;
   await page.goto('/register');
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha', { exact: true }).fill(password);
   await page.getByLabel('Confirmar senha').fill(password);
   await page.getByRole('button', { name: 'Criar conta' }).click();
 
+  await expect(page).toHaveURL(/\/app\/onboarding$/u);
+  await expect(
+    page.getByRole('heading', { name: 'Crie sua primeira organização' }),
+  ).toBeVisible();
+
+  await page.getByRole('link', { name: 'Criar organização' }).click();
+  await page.getByLabel('Nome').fill(firstOrganization);
+  await page
+    .getByLabel('Identificador')
+    .fill(`org-a-${crypto.randomUUID().slice(0, 8)}`);
+  await page.getByRole('button', { name: 'Criar organização' }).click();
   await expect(page).toHaveURL(/\/app$/u);
   await expect(
-    page.getByRole('heading', { name: 'Acesso confirmado' }),
+    page.getByRole('heading', { name: firstOrganization }),
+  ).toBeVisible();
+
+  await page.getByRole('link', { name: 'Nova organização' }).click();
+  await page.getByLabel('Nome').fill(secondOrganization);
+  await page
+    .getByLabel('Identificador')
+    .fill(`org-b-${crypto.randomUUID().slice(0, 8)}`);
+  await page.getByRole('button', { name: 'Criar organização' }).click();
+  await expect(
+    page.getByRole('heading', { name: secondOrganization }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(
+    page.getByLabel('Organização ativa').locator('option:checked'),
+  ).toHaveText(secondOrganization);
+  await page
+    .getByLabel('Organização ativa')
+    .selectOption({ label: firstOrganization });
+  await expect(
+    page.getByRole('heading', { name: firstOrganization }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Sair' }).click();
   await expect(page).toHaveURL(/\/login$/u);
@@ -54,8 +85,10 @@ test('login usa mensagem genérica e permite acesso com credenciais válidas', a
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha').fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/app$/u);
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/onboarding$/u);
+  await expect(
+    page.getByRole('heading', { name: 'Crie sua primeira organização' }),
+  ).toBeVisible();
 });
 
 test('formulário de login mantém ordem básica de teclado', async ({ page }) => {

@@ -23,6 +23,8 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 - Autenticação e autorização são aplicadas no backend.
 - Toda operação tenant-owned usa contexto validado e filtro de organização.
 - Caso positivo e negativo entre organizações A/B foram testados.
+- Header tenant ausente retorna 400; referência, parâmetro ou payload inválido retorna 422; recurso externo retorna 404 seguro.
+- Troca de tenant cancela/remove somente queries tenant-scoped e preserva caches globais.
 - Inputs, outputs, uploads e erros foram validados e não vazam informação.
 - Segredos e PII não aparecem em código, frontend, fixtures ou logs.
 - Operações sensíveis geram auditoria atômica e redigida.
@@ -35,6 +37,8 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 - Prisma Client e schema são gerados/validados; `migrate deploy` e `migrate status` passam no banco descartável.
 - Testes de integração usam `DATABASE_URL_TEST`, confirmam migrations aplicadas e não deixam tabelas demonstrativas indevidas.
 - Constraints e índices sustentam invariantes e consultas conhecidas.
+- Invariantes previsíveis são validadas pelo caso de uso; constraints/triggers permanecem última defesa e seus detalhes não chegam ao cliente.
+- Remoção histórica e idempotente de membership não executa `DELETE` físico.
 - Mudança destrutiva tem estratégia de compatibilidade, backup/rollback ou expand/contract.
 - Retenção, exclusão e compatibilidade histórica foram consideradas.
 
@@ -46,6 +50,7 @@ Uma entrega só está concluída quando todos os itens aplicáveis estão atendi
 - Alterações de autenticação cobrem cookie, expiração, revogação, enumeração, CSRF/origem, rate limit e reload no navegador.
 - Concorrência, idempotência e falha externa foram testadas quando relevantes.
 - Todos os gates obrigatórios passam sem flaky conhecido não tratado.
+- `pnpm test:openapi` passa e o documento corresponde aos endpoints entregues.
 
 ## UX e acessibilidade
 

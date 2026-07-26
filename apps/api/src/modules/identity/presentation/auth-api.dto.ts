@@ -1,36 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export class ProblemDetailsDto {
-  @ApiProperty({ example: 'https://closeflow.local/problems/http-401' })
-  public type!: string;
-
-  @ApiProperty({ example: 'Autenticação necessária' })
-  public title!: string;
-
-  @ApiProperty({ example: 401 })
-  public status!: number;
-
-  @ApiProperty({ example: 'INVALID_CREDENTIALS' })
-  public code!: string;
-
-  @ApiProperty({ example: 'E-mail ou senha inválidos.' })
-  public detail!: string;
-
-  @ApiProperty({ example: '/api/v1/auth/login' })
-  public instance!: string;
-
-  @ApiProperty({ maxLength: 128, example: 'req-7f5c2d' })
-  public correlationId!: string;
-
-  @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: {
-      type: 'array',
-      items: { type: 'string' },
-    },
-  })
-  public errors?: Record<string, string[]>;
-}
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterRequestDto {
   @ApiProperty({ maxLength: 254 })

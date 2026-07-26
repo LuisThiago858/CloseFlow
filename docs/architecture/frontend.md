@@ -43,7 +43,9 @@ Cada feature pode conter `routes`, `components`, `queries`, `mutations`, `schema
 - Tipos de transporte são preferencialmente gerados do OpenAPI.
 - Zod valida entradas de formulário e, em fronteiras de risco, respostas externas; não duplicar todas as regras do domínio.
 - Query keys incluem organização ativa e filtros para impedir colisões de cache.
-- Ao trocar de organização, cancelar requisições, limpar dados tenant-sensitive e reinicializar caches relevantes.
+- Queries globais usam `['auth', 'me']` e `['organizations']`; dados tenant-scoped começam por `['organization', organizationId]`.
+- Ao trocar de organização, cancelar requisições e remover somente queries do tenant anterior, preservando caches globais e dados de outros tenants não selecionados.
+- Somente o UUID da organização selecionada é persistido em `localStorage`; sessão, papel e dados da organização sempre vêm da API.
 - Mutations invalidam chaves específicas; optimistic update apenas com rollback simples e benefício claro.
 
 ## Formulários
@@ -85,4 +87,5 @@ Toda tela remota relevante considera: carregando, vazio, sucesso, erro, sem perm
 - Unitários para funções e componentes com comportamento relevante.
 - Integração com Testing Library e Mock Service Worker nos fluxos da feature.
 - E2E para login, troca de organização, fechamento, evidência e revisão.
+- A Fase 4 cobre onboarding, criação, reload, seleção determinística, header tenant, perda de acesso e ausência de cache cruzado.
 - Testes devem priorizar comportamento acessível, não detalhes de implementação.

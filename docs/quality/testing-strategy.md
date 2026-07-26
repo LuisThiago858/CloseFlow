@@ -17,6 +17,8 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 - Repositórios Prisma contra PostgreSQL real descartável.
 - Fundação de persistência verifica conexão, migrations, tabelas `users`/`sessions`, constraints e health disponível/indisponível.
 - Identity verifica transações, concorrência de cadastro, Argon2id, cookie, expiração, revogação, isolamento de sessões, CORS e rate limit contra a API real.
+- Organizations verifica migration limpa e sobre a Fase 3, criação atômica com owner, trigger diferida, colisão de slug, histórico/idempotência de membership e organização inativa preparada diretamente no banco.
+- Rotas tenant-scoped cobrem organizações A/B, header ausente, UUID inválido, contexto divergente e papel insuficiente.
 - Constraints, transações, concorrência, migrações e isolamento A/B.
 - Módulos NestJS com adapters controlados.
 - Frontend com Testing Library + MSW para formulários, erros e cache.
@@ -25,6 +27,7 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 ### Contrato
 
 - OpenAPI válido e sem breaking change acidental.
+- `pnpm test:openapi` verifica autenticação por cookie, rotas de organização, header tenant e Problem Details no CI.
 - Respostas e Problem Details aderem ao schema.
 - Cliente gerado compila com frontend.
 - Adapters externos têm contract tests conforme fornecedor escolhido.
@@ -32,7 +35,8 @@ Os testes devem dar confiança em regras de fechamento, isolamento entre organiz
 ### End-to-end
 
 - Navegador e API em stack próxima da real.
-- Fluxo crítico: autenticar, selecionar organização, configurar empresa/template, criar fechamento, executar com evidência, revisar, reprovar/corrigir e aprovar.
+- Fluxo implementado: autenticar, onboarding, criar duas organizações, trocar contexto, recarregar e encerrar sessão.
+- Fluxo futuro: configurar empresa/template, criar fechamento, executar com evidência, revisar, reprovar/corrigir e aprovar.
 - Acesso cross-tenant, cliente convidado, sessão expirada e troca de organização.
 - Poucos testes, estáveis, com dados isolados e diagnóstico útil.
 - O gate atual usa Playwright/Chromium sobre builds de API e web para cadastro, login, reload da sessão, logout, acesso anônimo, erro genérico e navegação básica por teclado.

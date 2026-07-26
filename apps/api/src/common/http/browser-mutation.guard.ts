@@ -7,8 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 
-import { ApplicationError } from '../../../common/errors/application-error';
-import type { Environment } from '../../../config/environment';
+import type { Environment } from '../../config/environment';
+import { ApplicationError } from '../errors/application-error';
 
 @Injectable()
 export class BrowserMutationGuard implements CanActivate {
